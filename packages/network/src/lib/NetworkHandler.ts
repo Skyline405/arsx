@@ -16,8 +16,9 @@ export const defineMiddleware = <I, O>(
 ): NetworkMiddleware<I, O> =>
   (next) => (stream$) => intercept(next, stream$)
 
-export const useMiddlewares = <I, O>(
-  list: NetworkMiddleware<I, O>[],
+export const applyMiddleware = <I, O>(
+  ...list: NetworkMiddleware<I, O>[]
+) => (
   backend: NetworkHandler<I, O>,
 ): NetworkHandler<I, O> => (
   list.reduceRight((prev, next) => next(prev), backend)

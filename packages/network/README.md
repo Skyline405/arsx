@@ -33,12 +33,12 @@ npm install -S rxjs @arsx/net
 
 ## NetworkHandler
 
-`NetworkHandler` the basic concept around which the entire architecture of the library is built.
-It can be some endpoint representing backend or or a pass-through handler that can intercept and modify the data flowing through it.
+The `NetworkHandler` is the basic concept around which the entire architecture of the library is built.
+It can be some endpoint representing backend or a pass-through handler that can intercept and modify the data flowing through it.
 
 ```ts
 const lengthBackend = (): NetworkHandler<string, number> =>
-  (stream$) => stream$.pipe(map(str => str.length))
+  (input$) => input$.pipe(map(str => str.length))
 
 const backend = lengthBackend()
 backend(of('hello', 'world!')).subscribe(observer) // emits: 5, 6, complete
@@ -50,19 +50,23 @@ Middleware is just a function taking a `NetworkHandler` and returns another `Net
 
 Middlewares are called in a chain from top to bottom, ending with backend.
 
-There is `useMiddlewares` function to help us to compose handlers into a chain.
+There is `applyMiddleware` function to help us to compose handlers into a chain.
 
 The `defineMiddleware` helper can be used to describe it as a function:
 
 ```ts
-const noopMiddleware = defineMiddleware<any, any>((
+const debugMiddleware = defineMiddleware<string, number>((
   next,             // next handler in chain
-  stream$,          // observable stream of values
-) => next(stream$)) // pass stream to next handler
+  input$,          // observable stream of input values
+) => next(input$.pipe(
+  tap((input) => console.log('input:', input))
+)).pipe(
+  tap((output) => console.log('output:', output))
+)) // pass stream to next handler
 
-const chain = useMiddlewares([
-  noopMiddleware,
-], lengthBackend())
+const chain = applyMiddleware(
+  debugMiddleware,
+)(lengthBackend())
 
 chain(of('hello', 'world!')).subscribe(observer) // emits: 5, 6, complete
 ```
@@ -103,9 +107,9 @@ They should be applied before backend.
 ```ts
 // This middleware compatible with any input and output
 const logMiddleware = (name: string) =>
-  defineMiddleware((next, stream$) => {
+  defineMiddleware((next, input$) => {
     const tag = `[${name}]`
-    return next(stream$.pipe(
+    return next(input$.pipe(
       tap((request) => console.log(tag, '=>', request))
     )).pipe(
       tap((response) => console.log(tag, '<=', response))
@@ -113,9 +117,9 @@ const logMiddleware = (name: string) =>
   })
 
 const http = new HttpClient(
-  useMiddlewares([
+  applyMiddleware(
     logMiddleware('HTTP'),
-  ], httpXhrBackend())
+  )(httpXhrBackend())
 )
 
 http.get('<url>').subscribe(observer)
@@ -144,7 +148,7 @@ const rpc = new JsonRpcClient(
 )
 
 rpc.send<string>('user.getRoleName', '<uuid>')
-  .subscribe(observer) // emit: 'Administrator'
+  .subscribe(observer) // emit: 'BasicRole'
 ```
 
 ## JsonRpcHandler
@@ -157,13 +161,13 @@ In everything else it's the same `NetworkHandler`.
 Type `JsonRpcMiddleware` is just an alias for `NetworkMiddleware<JsonRpcRequest, JsonRpcResponse>`.
 In everything else it's the same `NetworkMiddleware`.
 
-Middlewares should be applied before backend.
+Middlewares always be applied before backend.
 
 ```ts
 const rpc = new JsonRpcClient(
-  useMiddlewares([
+  applyMiddleware(
     logMiddleware('RPC'),
-  ], jsonRpcHttpHandler('https://example.com/api/rpc'),
+  )(jsonRpcHttpHandler('https://example.com/api/rpc'))
 )
 ```
 
@@ -172,9 +176,9 @@ Also we can apply to backend its own middlewares:
 ```ts
 const rpc = new JsonRpcClient(
   jsonRpcHttpHandler('https://example.com/api/rpc',
-    useMiddlewares([
+    applyMiddleware(
       logMiddleware('HTTP')
-    ], httpXhrBackend())
+    )(httpXhrBackend())
   ),
 )
 ```
@@ -183,13 +187,12 @@ Or both:
 
 ```ts
 const rpc = new JsonRpcClient(
-  useMiddlewares([
+  applyMiddleware(
     logMiddleware('RPC'),
-  ], jsonRpcHttpHandler(
-    'https://example.com/api/rpc',
-    useMiddlewares([
+  )(jsonRpcHttpHandler('https://example.com/api/rpc',
+    applyMiddleware(
       logMiddleware('HTTP')
-    ], httpXhrBackend())
+    )(httpXhrBackend())
   ),
 )
 ```
@@ -197,4 +200,3 @@ const rpc = new JsonRpcClient(
 # TODO
 
 - [ ] Support batch requests for JsonRpc.
-- [ ] Support notification requests for JsonRpc.
