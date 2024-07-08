@@ -2,9 +2,6 @@
   "name": "@arsx/net",
   "version": "0.1.2",
   "type": "commonjs",
-  "main": "./index.js",
-  "module": "./index.mjs",
-  "typings": "./index.d.ts",
   "description": "A reactive networking library",
   "author": "Ruslan Anufriev",
   "license": "Apache-2.0",
@@ -29,5 +26,8 @@
     "network",
     "jsonrpc",
     "rpc"
-  ]
+  ],
+  "main": "./index.js",
+  "module": "./index.mjs",
+  "typings": "./index.d.ts"
 }

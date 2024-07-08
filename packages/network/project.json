@@ -20,7 +20,10 @@
         "outputPath": "dist/packages/network",
         "main": "packages/network/src/index.ts",
         "tsConfig": "packages/network/tsconfig.lib.json",
-        "assets": ["packages/network/*.md"]
+        "assets": [
+          "packages/network/LICENSE",
+          "packages/network/README.md"
+        ]
       }
     },
     "nx-release-publish": {

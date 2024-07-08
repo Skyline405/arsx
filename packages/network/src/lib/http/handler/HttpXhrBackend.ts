@@ -1,4 +1,4 @@
-import { map, of, switchMap, take, tap } from "rxjs"
+import { from, map, switchMap, take, tap } from "rxjs"
 import { NetworkStream } from "../../NetworkStream"
 import { HttpDownloadProgressEvent, HttpEvent, HttpSentEvent, HttpUploadProgressEvent } from "../HttpEvent"
 import { HttpHeaders } from "../HttpHeaders"
@@ -33,7 +33,7 @@ export const httpXhrBackend = (
           throw new Error(`"JSONP" method is not supported by "${httpXhrBackend.name}"`)
       }),
       switchMap((request) => {
-        return of(xhrFactory.load()).pipe(
+        return from(xhrFactory.load()).pipe(
           map(() => request)
         )
       }),
@@ -43,7 +43,7 @@ export const httpXhrBackend = (
           const url = new URL(request.url, baseUrl)
           const params = new URLSearchParams(request.params)
           url.search = params.toString()
-          xhr.open(request.method, url)
+          xhr.open(request.method, url.href)
 
           xhr.withCredentials = Boolean(request.withCredentials)
           xhr.responseType = request.responseType

@@ -1,4 +1,5 @@
 export * from './JsonRpc'
 export * from './JsonRpcClient'
+export * from './JsonRpcHandler'
 export * from './rxjs-interop'
 export * from './utils'

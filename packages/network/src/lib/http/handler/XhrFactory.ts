@@ -5,7 +5,7 @@ export abstract class XhrFactory {
 
   build(): XMLHttpRequest {
     if (this.XhrImpl == null)
-      throw new Error('"XMLHttpRequest" implementation not awailable')
+      throw new Error(`"XMLHttpRequest" implementation not available`)
     return new this.XhrImpl()
   }
 
@@ -21,7 +21,7 @@ export abstract class XhrFactory {
 }
 
 export class BrowserXhr extends XhrFactory {
-  async load(): Promise<void> {
+  override async load(): Promise<void> {
     this.XhrImpl = globalThis.XMLHttpRequest
   }
 }

@@ -26,7 +26,7 @@ const fakeRpcHandler = (): NetworkHandler<JsonRpc.Request, JsonRpc.Response> =>
 
 describe('JsonRpcClient', () => {
   describe('request should be handled with', () => {
-    it('success', (ctx) => new Promise<void>((done) => {
+    it('success', () => new Promise<void>((done) => {
       const rpc = new JsonRpcClient(fakeRpcHandler())
 
       rpc.send<string>('add', 'world').subscribe({
@@ -36,7 +36,7 @@ describe('JsonRpcClient', () => {
       })
     }))
 
-    it('error', (ctx) => new Promise<void>((done) => {
+    it('error', () => new Promise<void>((done) => {
       const rpc = new JsonRpcClient(fakeRpcHandler())
 
       rpc.send('not found', 'world').subscribe({

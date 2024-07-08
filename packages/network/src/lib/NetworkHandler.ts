@@ -20,6 +20,5 @@ export const applyMiddleware = <I, O>(
   ...list: NetworkMiddleware<I, O>[]
 ) => (
   backend: NetworkHandler<I, O>,
-): NetworkHandler<I, O> => (
+): NetworkHandler<I, O> =>
   list.reduceRight((prev, next) => next(prev), backend)
-)
