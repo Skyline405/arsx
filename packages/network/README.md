@@ -141,8 +141,10 @@ http.get('<url>')
 ## Basic usage
 
 ```ts
+const rpc = new JsonRpcClient(jsonRpcHttpHandler('https://example.com/api/rpc'))
+// or
 const rpc = new JsonRpcClient(
-  jsonRpcHttpHandler(httpXhrBackend('https://example.com/api/rpc')),
+  jsonRpcHttpHandler('rpc', httpXhrBackend('https://example.com/api')),
 )
 
 rpc.send<string>('user.getRoleName', '<uuid>')
@@ -198,5 +200,3 @@ const rpc = new JsonRpcClient(
 # TODO
 
 - [ ] Support batch requests for JsonRpc.
-- [ ] Support WebSocket client
-- [ ] Support SSE client (?)
