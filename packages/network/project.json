@@ -1,7 +1,7 @@
 {
   "name": "network",
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
-  "sourceRoot": "packages/network/src",
+  "sourceRoot": "packages/network",
   "projectType": "library",
   "release": {
     "version": {
@@ -14,7 +14,7 @@
   "tags": ["type:lib"],
   "targets": {
     "build": {
-      "executor": "@nx/vite:build",
+      "executor": "@nx/rollup:rollup",
       "outputs": ["{options.outputPath}"],
       "options": {
         "outputPath": "dist/packages/network",
@@ -23,7 +23,24 @@
         "assets": [
           "packages/network/LICENSE",
           "packages/network/README.md"
-        ]
+        ],
+        "project": "packages/network/package.json",
+        "format": ["cjs", "esm"]
+      }
+    },
+    "lint": {
+      "executor": "@nx/linter:eslint",
+      "outputs": ["{options.outputFile}"],
+      "options": {
+        "lintFilePatterns": ["packages/network/**/*.ts"]
+      }
+    },
+    "test": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
+      "options": {
+        "jestConfig": "packages/network/jest.config.ts",
+        "passWithNoTests": true
       }
     },
     "nx-release-publish": {

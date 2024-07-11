@@ -12,8 +12,6 @@ export abstract class XhrFactory {
   static create(): XhrFactory {
     if ('XMLHttpRequest' in globalThis) {
       return new BrowserXhr()
-    } else if ('process' in globalThis) {
-      return new NodejsXhr()
     }
 
     throw new Error('XhrFactory is not specified for this platform')
@@ -23,12 +21,5 @@ export abstract class XhrFactory {
 export class BrowserXhr extends XhrFactory {
   override async load(): Promise<void> {
     this.XhrImpl = globalThis.XMLHttpRequest
-  }
-}
-
-export class NodejsXhr extends XhrFactory {
-  override async load() {
-    const xhr2 = await import('xhr2')
-    this.XhrImpl = xhr2.XMLHttpRequest as any
   }
 }
