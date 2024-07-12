@@ -1,33 +1,33 @@
+import { PartialIf } from "../../types/utils"
 import { isObject } from "../../utils/typeof"
 
 /* eslint-disable @typescript-eslint/no-namespace */
 export namespace JsonRpc {
   export type Id = string | number | null
 
-  export interface ErrorObject<T = undefined> {
-    code: number
-    message: string
-    data: T
-  }
+  export type ErrorObject<T = undefined> = {
+    readonly code: number
+    readonly message: string
+  } & PartialIf<T, { readonly data: T }>
 
   export interface Message {
-    jsonrpc: '2.0'
-    id: Id
+    readonly jsonrpc: '2.0'
+    readonly id: Id
   }
 
   export interface Request<T = unknown> extends Message {
-    params: T
-    method: string
+    readonly params: T
+    readonly method: string
   }
 
   export type Notification<T = unknown> = Omit<Request<T>, 'id'>
 
   export interface Success<T = unknown> extends Message {
-    result: T
+    readonly result: T
   }
 
-  export interface Error<T = unknown> extends Message {
-    error: ErrorObject<T>
+  export interface Error<T = undefined> extends Message {
+    readonly error: ErrorObject<T>
   }
 
   export enum ErrorCode {

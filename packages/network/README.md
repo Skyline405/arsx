@@ -129,7 +129,7 @@ http.get('<url>').subscribe(observer)
 
 ```ts
 const http = new HttpClient()
-http.get('<url>')
+http.request(request)
   .pipe(takeResponse())      // just filter HttpResponse from http events
   .pipe(takeBody())          // apply takeResponse() and then pluck body field from response
   .pipe(catchHttpError(...)) // catch only http errors and skip others
@@ -166,8 +166,13 @@ Middlewares always be applied before backend.
 ```ts
 const rpc = new JsonRpcClient(
   applyMiddleware(
-    logMiddleware('RPC'),
-  )(jsonRpcHttpHandler('https://example.com/api/rpc'))
+    logMiddleware('RPC')
+  )(
+    jsonRpcHttpHandler(
+      'rpc',
+      httpXhrBackend()
+    )
+  )
 )
 ```
 
@@ -179,7 +184,7 @@ const rpc = new JsonRpcClient(
     applyMiddleware(
       logMiddleware('HTTP')
     )(httpXhrBackend())
-  ),
+  )
 )
 ```
 
