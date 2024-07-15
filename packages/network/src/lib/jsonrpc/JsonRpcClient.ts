@@ -4,14 +4,27 @@ import { NetworkHandler } from "../NetworkHandler"
 import { NetworkStream } from "../NetworkStream"
 import { JsonRpc } from "./JsonRpc"
 import { createIntGenerator } from "./utils"
+import { NetworkContext } from "../NetworkContext"
+import { JsonRpcRequest, JsonRpcRequestInit } from "./JsonRpcRequest"
+import { takeResult } from "./rxjs-interop"
+
+export interface JsonRpcRequestOptions {
+  context?: NetworkContext
+}
 
 export class JsonRpcClient {
   constructor(
-    private handler: NetworkHandler<JsonRpc.Request, JsonRpc.Response>,
+    private handler: NetworkHandler<JsonRpcRequest, JsonRpc.Response>,
     private readonly idGenerator: Generator<unknown> = createIntGenerator(),
   ) {}
 
-  request<O>(request: JsonRpc.Request): NetworkStream<JsonRpc.Success<O>> {
+  request<O>(
+    requestInit: JsonRpcRequest | JsonRpcRequestInit
+  ): NetworkStream<O> {
+    const request = requestInit instanceof JsonRpcRequest
+      ? requestInit
+      : new JsonRpcRequest(requestInit)
+
     return this.handler(of(request))
       .pipe(
         map((message) => {
@@ -31,15 +44,16 @@ export class JsonRpcClient {
             id: null,
             jsonrpc: '2.0',
           } satisfies JsonRpc.Error
-        })
+        }),
+        takeResult(),
       )
   }
 
-  send<O>(method: string): NetworkStream<JsonRpc.Success<O>>
-  send<O>(method: string, params: unknown): NetworkStream<JsonRpc.Success<O>>
-  send<O>(method: string, params?: unknown): NetworkStream<JsonRpc.Success<O>> {
+  send<O>(method: string): NetworkStream<O>
+  send<O>(method: string, params: unknown): NetworkStream<O>
+  send<O>(method: string, params?: unknown): NetworkStream<O> {
     const { value: id } = this.idGenerator.next()
-    return this.request({
+    return this.request<O>({
       id,
       jsonrpc: '2.0',
       method,

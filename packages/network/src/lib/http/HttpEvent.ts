@@ -53,8 +53,3 @@ export class HttpUploadProgressEvent extends HttpProgressEvent {
 export class HttpUserEvent<T> implements IHttpEvent<T> {
   readonly type: HttpEventType.UserEvent = HttpEventType.UserEvent
 }
-
-export function isResponseEvent<T>(value: HttpEvent<T>): value is HttpResponse<T> {
-  return value.type === HttpEventType.Response
-    && value instanceof HttpResponse
-}

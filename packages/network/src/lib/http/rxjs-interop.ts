@@ -9,9 +9,13 @@ import {
   ObservedValueOf,
   throwError,
 } from "rxjs"
-import { HttpEvent, isResponseEvent } from "./HttpEvent"
+import { HttpEvent, HttpEventType } from "./HttpEvent"
 import { HttpErrorResponse, HttpResponse } from "./HttpResponse"
 
+function isResponseEvent<T>(value: HttpEvent<T>): value is HttpResponse<T> {
+  return value.type === HttpEventType.Response
+    && value instanceof HttpResponse
+}
 
 export function takeResponse<T>(): OperatorFunction<HttpEvent<T>, HttpResponse<T>> {
   return pipe(
