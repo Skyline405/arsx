@@ -73,7 +73,7 @@ export class HttpRequest<T = any, R = any> {
 
   clone<V = T>(update: Partial<HttpRequestInit<V>> = {}): HttpRequest<V, R> {
     return new HttpRequest<any, R>({
-      body: typeof update.body !== 'undefined' ? update.body : this.body,
+      body: 'body' in update ? update.body : this.body,
       headers: update.headers ?? this.headers,
       method: update.method ?? this.method,
       params: update.params ?? this.params,
