@@ -11,7 +11,7 @@ export class JsonRpcClient {
     private readonly idGenerator: Generator<unknown> = createIntGenerator(),
   ) {}
 
-  message<O>(request: JsonRpc.Request): NetworkStream<JsonRpc.Success<O>> {
+  request<O>(request: JsonRpc.Request): NetworkStream<JsonRpc.Success<O>> {
     return this.handler(of(request))
       .pipe(
         map((message) => {
@@ -39,7 +39,7 @@ export class JsonRpcClient {
   send<O>(method: string, params: unknown): NetworkStream<JsonRpc.Success<O>>
   send<O>(method: string, params?: unknown): NetworkStream<JsonRpc.Success<O>> {
     const { value: id } = this.idGenerator.next()
-    return this.message({
+    return this.request({
       id,
       jsonrpc: '2.0',
       method,
@@ -50,7 +50,7 @@ export class JsonRpcClient {
   notify(method: string): Promise<void>
   notify(method: string, params: unknown): Promise<void>
   async notify(method: string, params?: unknown): Promise<void> {
-    await lastValueFrom(this.message({
+    await lastValueFrom(this.request({
       id: null,
       jsonrpc: '2.0',
       method,

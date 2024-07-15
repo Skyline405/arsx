@@ -2,7 +2,7 @@
 import { of } from "rxjs"
 import { NetworkStream } from "../NetworkStream"
 import { HttpHandler } from "./handler/HttpHandler"
-import { httpXhrBackend } from "./handler/HttpXhrBackend"
+import { xhrBackend } from "./handler/XhrBackend"
 import { HttpEvent } from "./HttpEvent"
 import { HttpMethod, HttpRequest, HttpRequestInit } from "./HttpRequest"
 import { HttpResponse } from "./HttpResponse"
@@ -12,7 +12,7 @@ export type HttpRequestOptions<T> = Omit<HttpRequestInit<T>, 'method' | 'url' | 
 
 export class HttpClient {
   constructor(
-    private readonly handler: HttpHandler = httpXhrBackend()
+    private readonly handler: HttpHandler = xhrBackend()
   ) {}
 
   request<R, T = any>(init: HttpRequestInit<T>): NetworkStream<HttpEvent<R>>

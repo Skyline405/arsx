@@ -1,5 +1,5 @@
 import { PartialIf } from "../../types/utils"
-import { HttpContext } from "./HttpContext"
+import { NetworkContext } from "../NetworkContext"
 import { HttpHeaders, HttpHeadersInit } from "./HttpHeaders"
 import {
   isArrayBuffer,
@@ -42,7 +42,7 @@ export interface HttpRequestInitBase {
   readonly withCredentials?: boolean
   readonly responseType?: HttpResponseType
   readonly reportProgress?: boolean
-  readonly context?: HttpContext
+  readonly context?: NetworkContext
 }
 
 export type HttpRequestInit<T> =
@@ -57,7 +57,7 @@ export class HttpRequest<T = any, R = any> {
   readonly withCredentials: boolean
   readonly responseType: HttpResponseType
   readonly reportProgress: boolean
-  readonly context: HttpContext
+  readonly context: NetworkContext
 
   constructor(init: HttpRequestInit<T>) {
     this.method = init.method
@@ -68,7 +68,7 @@ export class HttpRequest<T = any, R = any> {
     this.headers = new HttpHeaders(init.headers)
     this.responseType = (init.responseType || 'json')
     this.reportProgress = init.reportProgress ?? false
-    this.context = init.context ?? new HttpContext()
+    this.context = init.context ?? new NetworkContext()
   }
 
   clone<V = T>(update: Partial<HttpRequestInit<V>> = {}): HttpRequest<V, R> {

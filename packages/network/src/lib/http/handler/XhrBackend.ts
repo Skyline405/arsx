@@ -21,7 +21,7 @@ function partialFromXhr(xhr: XMLHttpRequest): () => HttpHeaderResponse {
   return () => headerResponse
 }
 
-export const httpXhrBackend = (
+export const xhrBackend = (
   baseUrl?: string,
   xhrFactory = XhrFactory.create(),
 ): HttpBackend =>
@@ -30,7 +30,7 @@ export const httpXhrBackend = (
       take(1),
       tap((request) => {
         if (request.method.toUpperCase() === 'JSONP')
-          throw new Error(`"JSONP" method is not supported by "${httpXhrBackend.name}"`)
+          throw new Error(`"JSONP" method is not supported by "${xhrBackend.name}"`)
       }),
       switchMap((request) => {
         return from(xhrFactory.load()).pipe(
