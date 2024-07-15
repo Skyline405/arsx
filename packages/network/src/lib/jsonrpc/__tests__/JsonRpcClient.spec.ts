@@ -10,7 +10,7 @@ const fakeRpcHandler = (): NetworkHandler<JsonRpc.Request, JsonRpc.Response> =>
           jsonrpc: '2.0',
           id: req.id,
           result: `Response for: ${req.params}`,
-        } satisfies JsonRpc.Response<string>
+        } satisfies JsonRpc.Success<string>
         default: return {
           jsonrpc: '2.0',
           id: req.id,
@@ -19,7 +19,7 @@ const fakeRpcHandler = (): NetworkHandler<JsonRpc.Request, JsonRpc.Response> =>
             message: 'Method ${0} not found',
             data: req.method,
           }
-        }
+        } satisfies JsonRpc.Error<string>
       }
     }),
   )
@@ -30,7 +30,11 @@ describe('JsonRpcClient', () => {
       const rpc = new JsonRpcClient(fakeRpcHandler())
 
       rpc.send<string>('add', 'world').subscribe({
-        next: (value) => expect(value).toEqual('Response for: world'),
+        next: (value) => expect(value).toEqual({
+          id: 1,
+          jsonrpc: '2.0',
+          result: 'Response for: world',
+        } satisfies JsonRpc.Success<string>),
         error: (err) => console.error(err),
         complete: () => done(),
       })
@@ -43,11 +47,15 @@ describe('JsonRpcClient', () => {
         next: (value) => console.log(value),
         error: (err) => {
           if (JsonRpc.isError(err)) {
-            expect(err.error).toEqual({
-              code: -1,
-              message: 'Method ${0} not found',
-              data: 'not found',
-            } satisfies JsonRpc.ErrorObject<string>)
+            expect(err).toEqual({
+              id: 1,
+              jsonrpc: '2.0',
+              error: {
+                code: -1,
+                message: 'Method ${0} not found',
+                data: 'not found',
+              }
+            } satisfies JsonRpc.Error<string>)
           }
           done()
         },

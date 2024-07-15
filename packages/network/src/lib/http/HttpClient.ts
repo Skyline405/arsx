@@ -8,15 +8,21 @@ import { HttpMethod, HttpRequest, HttpRequestInit } from "./HttpRequest"
 import { HttpResponse } from "./HttpResponse"
 import { takeResponse } from "./rxjs-interop"
 
-export type HttpRequestOptions<T> = Omit<HttpRequestInit<T>, 'method' | 'url'>
+export type HttpRequestOptions<T> = Omit<HttpRequestInit<T>, 'method' | 'url' | 'reportProgress'>
 
 export class HttpClient {
   constructor(
     private readonly handler: HttpHandler = httpXhrBackend()
   ) {}
 
-  request<R, T = any>(request: HttpRequest<T, R>): NetworkStream<HttpEvent<R>> {
-    return this.handler(of(request))
+  request<R, T = any>(init: HttpRequestInit<T>): NetworkStream<HttpEvent<R>>
+  request<R, T = any>(request: HttpRequest<T, R>): NetworkStream<HttpEvent<R>>
+  request(
+    requestInit: HttpRequest | HttpRequestInit<unknown>
+  ): NetworkStream<HttpEvent<unknown>> {
+    if (requestInit instanceof HttpRequest)
+      return this.handler(of(requestInit))
+    return this.handler(of(new HttpRequest(requestInit)))
   }
 
   send<R, T = any>(
@@ -35,7 +41,7 @@ export class HttpClient {
       url,
     })
 
-    return this.request(request)
+    return this.request<R, T>(request)
       .pipe(
         takeResponse(),
       )
