@@ -1,31 +1,23 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { lastValueFrom, map, of } from "rxjs"
-import { NetworkHandler } from "../NetworkHandler"
+import { lastValueFrom, map } from "rxjs"
+import { NetworkHandlerBuilder } from "../NetworkHandler"
 import { NetworkStream } from "../NetworkStream"
 import { JsonRpc } from "./JsonRpc"
 import { createIntGenerator } from "./utils"
 import { NetworkContext } from "../NetworkContext"
-import { JsonRpcRequest, JsonRpcRequestInit } from "./JsonRpcRequest"
 import { takeResult } from "./rxjs-interop"
-
-export interface JsonRpcRequestOptions {
-  context?: NetworkContext
-}
 
 export class JsonRpcClient {
   constructor(
-    private handler: NetworkHandler<JsonRpcRequest, JsonRpc.Response>,
+    private handler: NetworkHandlerBuilder<JsonRpc.Request, JsonRpc.Response>,
     private readonly idGenerator: Generator<unknown> = createIntGenerator(),
   ) {}
 
   request<O>(
-    requestInit: JsonRpcRequest | JsonRpcRequestInit
+    request: JsonRpc.Request,
+    context: NetworkContext = new NetworkContext(),
   ): NetworkStream<O> {
-    const request = requestInit instanceof JsonRpcRequest
-      ? requestInit
-      : new JsonRpcRequest(requestInit)
-
-    return this.handler(of(request))
+    return this.handler(context)(request)
       .pipe(
         map((message) => {
           if (JsonRpc.isSuccess<O>(message)) {
@@ -38,35 +30,30 @@ export class JsonRpcClient {
 
           throw {
             error: {
-              code: JsonRpc.ErrorCode.InternalError,
-              message: 'Internal Error',
+              code: 0,
+              message: 'Unknown Error',
             },
             id: null,
-            jsonrpc: '2.0',
           } satisfies JsonRpc.Error
         }),
         takeResult(),
       )
   }
 
-  send<O>(method: string): NetworkStream<O>
-  send<O>(method: string, params: unknown): NetworkStream<O>
-  send<O>(method: string, params?: unknown): NetworkStream<O> {
+  send<O>(method: string, params: unknown, context?: NetworkContext): NetworkStream<O>
+  send<O>(method: string, params?: unknown, context?: NetworkContext): NetworkStream<O> {
     const { value: id } = this.idGenerator.next()
     return this.request<O>({
       id,
-      jsonrpc: '2.0',
       method,
       params,
-    })
+    }, context)
   }
 
-  notify(method: string): Promise<void>
   notify(method: string, params: unknown): Promise<void>
   async notify(method: string, params?: unknown): Promise<void> {
     await lastValueFrom(this.request({
       id: null,
-      jsonrpc: '2.0',
       method,
       params,
     }))

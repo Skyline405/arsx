@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { of } from "rxjs"
 import { NetworkStream } from "../NetworkStream"
 import { HttpHandler } from "./handler/HttpHandler"
 import { xhrBackend } from "./handler/XhrBackend"
@@ -18,11 +17,12 @@ export class HttpClient {
   request<R, T = any>(init: HttpRequestInit<T>): NetworkStream<HttpEvent<R>>
   request<R, T = any>(request: HttpRequest<T, R>): NetworkStream<HttpEvent<R>>
   request(
-    requestInit: HttpRequest | HttpRequestInit<unknown>
+    requestInit: HttpRequest | HttpRequestInit<unknown>,
   ): NetworkStream<HttpEvent<unknown>> {
-    if (requestInit instanceof HttpRequest)
-      return this.handler(of(requestInit))
-    return this.handler(of(new HttpRequest(requestInit)))
+    const request = requestInit instanceof HttpRequest
+      ? requestInit
+      : new HttpRequest(requestInit)
+    return this.handler(request.context)(request)
   }
 
   send<R, T = any>(

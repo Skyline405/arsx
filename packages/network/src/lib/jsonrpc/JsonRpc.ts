@@ -11,13 +11,16 @@ export namespace JsonRpc {
   } & PartialIf<T, { readonly data: T }>
 
   export interface Message {
-    readonly jsonrpc: '2.0'
     readonly id: Id
   }
 
   export interface Request<T = unknown> extends Message {
     readonly params: T
     readonly method: string
+  }
+
+  export type RequestBody = Request & {
+    readonly jsonrpc: '2.0'
   }
 
   export type Notification<T = unknown> = Omit<Request<T>, 'id'>
@@ -42,7 +45,7 @@ export namespace JsonRpc {
 
   export function isMessage(message: unknown): message is JsonRpc.Message {
     return isObject(message)
-      && 'jsonrpc' in message
+      && 'id' in message
   }
 
   export function isRequest<T>(message: unknown): message is JsonRpc.Request<T> {

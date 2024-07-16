@@ -1,8 +1,7 @@
-import { from, map, switchMap, take, tap } from "rxjs"
+import { from, map, of, switchMap, take, tap } from "rxjs"
 import { NetworkStream } from "../../NetworkStream"
 import { HttpDownloadProgressEvent, HttpEvent, HttpSentEvent, HttpUploadProgressEvent } from "../HttpEvent"
 import { HttpHeaders } from "../HttpHeaders"
-import { HttpRequest } from "../HttpRequest"
 import { HttpErrorResponse, HttpHeaderResponse, HttpResponse } from "../HttpResponse"
 import { HttpBackend } from "./HttpHandler"
 import { XhrFactory } from "./XhrFactory"
@@ -25,8 +24,8 @@ export const xhrBackend = (
   baseUrl?: string,
   xhrFactory = XhrFactory.create(),
 ): HttpBackend =>
-  (request$: NetworkStream<HttpRequest<any>>) =>
-    request$.pipe(
+  () => (request) =>
+    of(request).pipe(
       take(1),
       tap((request) => {
         if (request.method.toUpperCase() === 'JSONP')

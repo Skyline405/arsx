@@ -1,4 +1,4 @@
-import { map, tap } from 'rxjs'
+import { map, of, tap } from 'rxjs'
 import { HttpClient } from '../HttpClient'
 import { HttpBackend, HttpResponse } from '../public-api'
 
@@ -10,7 +10,7 @@ describe('HttpClient', () => {
     it('via "send" method', () => new Promise<void>((done) => {
       const onceCheckFn = jest.fn()
 
-      const backend: HttpBackend = (request$) => request$.pipe(
+      const backend: HttpBackend = (request) => of(request).pipe(
         map((request) => new HttpResponse({
           url: request.url,
           body: request.body,
