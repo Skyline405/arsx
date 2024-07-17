@@ -1,7 +1,7 @@
 import { NetworkStream } from "../core/NetworkStream"
-import { NetworkHandler } from "../core/NetworkHandler"
+import { NetworkHandlerDelegate } from "../core/NetworkHandler"
 
-export const sseBackend = <T>(url: string, withCredentials?: boolean): NetworkHandler<void, T> =>
+export const sseBackend = <T>(url: string, withCredentials?: boolean): NetworkHandlerDelegate<void, T> =>
   () => new NetworkStream((sub) => {
     const sse = new EventSource(url, {
       withCredentials,

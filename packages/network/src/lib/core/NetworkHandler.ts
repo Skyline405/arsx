@@ -1,15 +1,16 @@
 import { NetworkContext } from "./NetworkContext"
 import { NetworkStream } from "./NetworkStream"
 
-export type NetworkHandler<I, O> = (input: I) => NetworkStream<O>
-export type NetworkHandlerBuilder<I, O> =
-  (context: NetworkContext) => NetworkHandler<I, O>
+export type NetworkHandlerDelegate<I, O> = (input: I) => NetworkStream<O>
+export type NetworkHandler<I, O> =
+  (context: NetworkContext) => NetworkHandlerDelegate<I, O>
 
+// TODO: comeup with new name of this type
 export type NetworkMiddleware<I, O> =
-  (next: NetworkHandlerBuilder<I, O>) => NetworkHandlerBuilder<I, O>
+  (next: NetworkHandler<I, O>) => NetworkHandler<I, O>
 
 export type NetworkInterceptor<I, O> = (
-  next: NetworkHandler<I, O>,
+  next: NetworkHandlerDelegate<I, O>,
   input: I,
   context: NetworkContext,
 ) => NetworkStream<O>
@@ -28,7 +29,7 @@ const splitInterceptor = <I, O>(
 export const withInterceptors = <I, O>(
   list: NetworkInterceptor<I, O>[]
 ): NetworkMiddleware<I, O> => (
-  backend: NetworkHandlerBuilder<I, O>,
-): NetworkHandlerBuilder<I, O> =>
+  backend: NetworkHandler<I, O>,
+): NetworkHandler<I, O> =>
   list.reduceRight((handlerBuilder, interceptor) =>
     splitInterceptor(interceptor)(handlerBuilder), backend)

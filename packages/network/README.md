@@ -12,17 +12,17 @@ A reactive networking library.
 - [Network](#network)
   * [Installation](#installation)
   * [NetworkHandler](#networkhandler)
-  * [NetworkMiddleware](#networkmiddleware)
+  * [NetworkInterceptor](#networkinterceptor)
 - [Http](#http)
   * [Basic usage](#basic-usage)
   * [Providing base url](#providing-base-url)
   * [HttpHandler](#httphandler)
-  * [HttpMiddleware](#httpmiddleware)
+  * [HttpInterceptor](#httpinterceptor)
   * [Handy RxJs operators](#handy-rxjs-operators)
 - [JsonRpc](#jsonrpc)
   * [Basic usage](#basic-usage-1)
   * [JsonRpcHandler](#jsonrpchandler)
-  * [JsonRpcMiddleware](#jsonrpcmiddleware)
+  * [JsonRpcInterceptor](#jsonrpcinterceptor)
 - [TODO](#todo)
 
 ## Installation
@@ -37,38 +37,72 @@ The `NetworkHandler` is the basic concept around which the entire architecture o
 It can be some endpoint representing backend or a pass-through handler that can intercept and modify the data flowing through it.
 
 ```ts
-const lengthBackend = (): NetworkHandler<string, number> =>
-  (input$) => input$.pipe(map(str => str.length))
+const lengthBackend = (): NetworkHandlerBuilder<string, number> =>
+  (context) => (input) => of(input).pipe(map(str => str.length))
 
 const backend = lengthBackend()
-backend(of('hello', 'world!')).subscribe(observer) // emits: 5, 6, complete
+backend(context)('hello').subscribe(observer) // emits: 5, complete
 ```
 
-## NetworkMiddleware
+## NetworkInterceptor
 
-Middleware is just a function taking a `NetworkHandler` and returns another `NetworkHandler`.
+Technically Interceptor is just a function taking a `NetworkHandler` and value, and return another `NetworkHandler`.
 
-Middlewares are called in a chain from top to bottom, ending with backend.
+Interceptors are called in a chain from top to bottom, ending with backend.
 
-There is `applyMiddleware` function to help us to compose handlers into a chain.
+There is `withInterceptors` function to help us to compose interceptors into a chain.
 
-The `defineMiddleware` helper can be used to describe it as a function:
+The `defineInterceptor` helper can be used to describe it as a function:
 
 ```ts
-const debugMiddleware = defineMiddleware<string, number>((
-  next,             // next handler in chain
-  input$,          // observable stream of input values
-) => next(input$.pipe(
-  tap((input) => console.log('input:', input))
-)).pipe(
-  tap((output) => console.log('output:', output))
-)) // pass stream to next handler
+const debugInterceptor = defineInterceptor((
+  next,    // next handler in chain
+  input,   // input value
+  context, // NetworkContext
+) => {
+  console.log('input:', input)
+  return next(input).pipe(
+    tap((output) => console.log('output:', output))
+  )
+)
 
-const chain = applyMiddleware(
-  debugMiddleware,
-)(lengthBackend())
+const chain = withInterceptors([
+  debugInteceptor,
+])(lengthBackend())
 
-chain(of('hello', 'world!')).subscribe(observer) // emits: 5, 6, complete
+chain(context)('hello').subscribe(observer) // emits: 5, complete
+```
+
+## NetworkContext
+
+Every `NetworkHandler` contain context which keeps in closure.
+It can be accessed by interceptors.
+
+```ts
+// define context token with default value
+const LOG_REQUEST = new NetworkContextToken<boolean>(() => true)
+
+const logInterceptor = defineInterceptor((
+  next, input, context,
+) => {
+  const shouldLog = context.get(LOG_REQUEST)
+
+  if (!shouldLog) {
+    console.log('input:', input)
+  }
+  
+  return next(input)
+)
+
+const chain = withInterceptors([
+  debugInteceptor,
+])(lengthBackend())
+
+// create context and set necessary values
+const context = new NetworkContext()
+context.set(LOG_REQUEST, false)
+
+chain(context)('hello').subscribe(observer) // emits: 5, complete
 ```
 
 # Http
@@ -95,30 +129,27 @@ http.get('path').subscribe(observer)
 Type `HttpHandler` is just an alias for `NetworkHandler<HttpRequest, HttpEvent>`.
 In everything else it's the same `NetworkHandler`.
 
-## HttpMiddleware
+## HttpInterceptor
 
-Type `HttpMiddleware` is just an alias for `NetworkMiddleware<HttpRequest, HttpEvent>`.
-In everything else it's the same `NetworkMiddleware`.
+Type `HttpInterceptor` is just an alias for `NetworkInterceptor<HttpRequest, HttpEvent>`.
+In everything else it's the same `NetworkInterceptor`.
 
-Middlewares can be used whith any backends based on `NetworkHandler` concept.
-
-They should be applied before backend.
+Interceptors can be used whith any backends based on `NetworkHandler` concept.
 
 ```ts
-// This middleware compatible with any input and output
-const logMiddleware = (name: string) =>
-  defineMiddleware((next, input$) => {
-    const tag = `[${name}]`
-    return next(input$.pipe(
-      tap((request) => console.log(tag, '=>', request))
-    )).pipe(
+const logInterceptor = (name: string) => {
+  const tag = `[${name}]`
+  return defineInteceptor((next, input, context) => {
+    console.log(tag, '=>', request)
+    return next(input).pipe(
       tap((response) => console.log(tag, '<=', response))
     )
   })
+}
 
 const http = new HttpClient(
-  applyMiddleware(
-    logMiddleware('HTTP'),
+  withInterceptor(
+    logInterceptor('HTTP'),
   )(httpXhrBackend())
 )
 
@@ -129,7 +160,7 @@ http.get('<url>').subscribe(observer)
 
 ```ts
 const http = new HttpClient()
-http.request(request)
+http.handle(request)         // handle is just a client's handler delegate
   .pipe(takeResponse())      // just filter HttpResponse from http events
   .pipe(takeBody())          // apply takeResponse() and then pluck body field from response
   .pipe(catchHttpError(...)) // catch only http errors and skip others
@@ -156,18 +187,18 @@ rpc.send<string>('user.getRoleName', '<uuid>')
 Type `JsonRpcHandler` is just an alias for `NetworkHandler<JsonRpcRequest, JsonRpcResponse>`.
 In everything else it's the same `NetworkHandler`.
 
-## JsonRpcMiddleware
+## JsonRpcInterceptor
 
-Type `JsonRpcMiddleware` is just an alias for `NetworkMiddleware<JsonRpcRequest, JsonRpcResponse>`.
-In everything else it's the same `NetworkMiddleware`.
+Type `JsonRpcInterceptor` is just an alias for `NetworkInterceptor<JsonRpcRequest, JsonRpcResponse>`.
+In everything else it's the same `NetworkInterceptor`.
 
-Middlewares always be applied before backend.
+Interceptors always be applied before backend.
 
 ```ts
 const rpc = new JsonRpcClient(
-  applyMiddleware(
-    logMiddleware('RPC')
-  )(
+  withInterceptors([
+    logInterceptor('RPC')
+  ])(
     jsonRpcHttpHandler(
       'rpc',
       httpXhrBackend()
@@ -181,9 +212,9 @@ Also we can apply to backend its own middlewares:
 ```ts
 const rpc = new JsonRpcClient(
   jsonRpcHttpHandler('https://example.com/api/rpc',
-    applyMiddleware(
-      logMiddleware('HTTP')
-    )(httpXhrBackend())
+    withInterceptors([
+      logInterceptor('HTTP')
+    ])(httpXhrBackend())
   )
 )
 ```
@@ -192,12 +223,12 @@ Or both:
 
 ```ts
 const rpc = new JsonRpcClient(
-  applyMiddleware(
-    logMiddleware('RPC'),
-  )(jsonRpcHttpHandler('https://example.com/api/rpc',
-    applyMiddleware(
-      logMiddleware('HTTP')
-    )(httpXhrBackend())
+  withInterceptors([
+    logInterceptor('RPC'),
+  ])(jsonRpcHttpHandler('https://example.com/api/rpc',
+    withInterceptors([
+      logInterceptor('HTTP')
+    ])(httpXhrBackend())
   ),
 )
 ```

@@ -1,17 +1,17 @@
-import { NetworkHandlerBuilder } from "../core/NetworkHandler"
+import { NetworkHandler } from "../core/NetworkHandler"
 import { HttpRequest } from "../http/HttpRequest"
 import { JsonRpc } from "./JsonRpc"
 import { takeBody } from "../http/rxjs-interop"
 import { HttpHandler, xhrBackend } from "../http/public-api"
 import { createIntGenerator } from "./utils"
 
-export type JsonRpcHandler = NetworkHandlerBuilder<JsonRpc.Request, JsonRpc.Response>
+export type JsonRpcHandler = NetworkHandler<JsonRpc.Request, JsonRpc.Response>
 
 export const jsonRpcHttpHandler = (
   url: string,
   backend: HttpHandler = xhrBackend(),
   idGenerator: Generator<unknown> = createIntGenerator(),
-): NetworkHandlerBuilder<JsonRpc.Request, JsonRpc.Response> => {
+): NetworkHandler<JsonRpc.Request, JsonRpc.Response> => {
   const nextId = (id?: JsonRpc.Id): JsonRpc.Id => {
     if (id !== undefined) return id
     return idGenerator.next().value

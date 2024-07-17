@@ -1,8 +1,8 @@
 import { JsonRpc, JsonRpcClient } from '../public-api'
-import { NetworkHandlerBuilder } from '../../core/NetworkHandler'
+import { NetworkHandler } from '../../core/NetworkHandler'
 import { map, of } from 'rxjs'
 
-const fakeRpcHandler = (): NetworkHandlerBuilder<JsonRpc.Request, JsonRpc.Response> =>
+const fakeRpcHandler = (): NetworkHandler<JsonRpc.Request, JsonRpc.Response> =>
   (context) => (request) =>
     of(request).pipe(
       map((req) => {

@@ -1,9 +1,9 @@
 import { webSocket } from 'rxjs/webSocket'
 import { NetworkStream } from "../core/NetworkStream"
-import { NetworkHandler } from "../core/NetworkHandler"
+import { NetworkHandlerDelegate } from "../core/NetworkHandler"
 import { of } from 'rxjs'
 
-export const websocketBackend = <T, R>(url: string): NetworkHandler<T, R> =>
+export const websocketBackend = <T, R>(url: string): NetworkHandlerDelegate<T, R> =>
   (payload) => new NetworkStream((sub) => {
     const socket$ = webSocket<unknown>({ url })
 
