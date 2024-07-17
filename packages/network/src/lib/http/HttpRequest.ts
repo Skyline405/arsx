@@ -1,5 +1,5 @@
 import { PartialIf } from "../../types/utils"
-import { NetworkContext } from "../NetworkContext"
+import { NetworkContext } from "../core/NetworkContext"
 import { HttpHeaders, HttpHeadersInit } from "./HttpHeaders"
 import {
   isArrayBuffer,

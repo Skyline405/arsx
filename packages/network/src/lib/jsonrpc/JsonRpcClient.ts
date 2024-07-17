@@ -1,9 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { map } from "rxjs"
-import { NetworkStream } from "../NetworkStream"
+import { NetworkStream } from "../core/NetworkStream"
 import { JsonRpc } from "./JsonRpc"
-import { NetworkContext } from "../NetworkContext"
-import { NetworkClient } from "../NetworkClient"
+import { NetworkContext } from "../core/NetworkContext"
+import { NetworkClient } from "../core/NetworkClient"
 
 export class JsonRpcClient extends NetworkClient<JsonRpc.Request, JsonRpc.Response> {
   request<O>(

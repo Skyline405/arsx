@@ -1,4 +1,4 @@
-import { NetworkHandlerBuilder, NetworkMiddleware, defineInterceptor } from "../../NetworkHandler"
+import { NetworkHandlerBuilder, NetworkMiddleware, defineInterceptor } from "../../core/NetworkHandler"
 import { HttpEvent } from "../HttpEvent"
 import { HttpRequest } from "../HttpRequest"
 

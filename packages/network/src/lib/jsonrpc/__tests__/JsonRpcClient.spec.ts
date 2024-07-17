@@ -1,5 +1,5 @@
 import { JsonRpc, JsonRpcClient } from '../public-api'
-import { NetworkHandlerBuilder } from '../../NetworkHandler'
+import { NetworkHandlerBuilder } from '../../core/NetworkHandler'
 import { map, of } from 'rxjs'
 
 const fakeRpcHandler = (): NetworkHandlerBuilder<JsonRpc.Request, JsonRpc.Response> =>

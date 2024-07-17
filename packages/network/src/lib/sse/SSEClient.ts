@@ -1,5 +1,5 @@
-import { NetworkHandler } from "../NetworkHandler"
-import { NetworkStream } from "../NetworkStream"
+import { NetworkHandler } from "../core/NetworkHandler"
+import { NetworkStream } from "../core/NetworkStream"
 
 export class SSEClient<T> extends NetworkStream<T> {
   constructor(

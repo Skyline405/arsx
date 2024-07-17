@@ -1,5 +1,5 @@
 import { from, map, of, switchMap, take, tap } from "rxjs"
-import { NetworkStream } from "../../NetworkStream"
+import { NetworkStream } from "../../core/NetworkStream"
 import { HttpDownloadProgressEvent, HttpEvent, HttpSentEvent, HttpUploadProgressEvent } from "../HttpEvent"
 import { HttpHeaders } from "../HttpHeaders"
 import { HttpErrorResponse, HttpHeaderResponse, HttpResponse } from "../HttpResponse"

@@ -1,6 +1,6 @@
 import { webSocket } from 'rxjs/webSocket'
-import { NetworkStream } from "../NetworkStream"
-import { NetworkHandler } from "../NetworkHandler"
+import { NetworkStream } from "../core/NetworkStream"
+import { NetworkHandler } from "../core/NetworkHandler"
 import { of } from 'rxjs'
 
 export const websocketBackend = <T, R>(url: string): NetworkHandler<T, R> =>

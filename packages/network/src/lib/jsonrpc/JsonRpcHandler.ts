@@ -1,4 +1,4 @@
-import { NetworkHandlerBuilder } from "../NetworkHandler"
+import { NetworkHandlerBuilder } from "../core/NetworkHandler"
 import { HttpRequest } from "../http/HttpRequest"
 import { JsonRpc } from "./JsonRpc"
 import { takeBody } from "../http/rxjs-interop"

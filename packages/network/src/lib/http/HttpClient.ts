@@ -1,10 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { NetworkStream } from "../NetworkStream"
+import { NetworkStream } from "../core/NetworkStream"
 import { HttpEvent } from "./HttpEvent"
 import { HttpMethod, HttpRequest, HttpRequestInit } from "./HttpRequest"
 import { HttpResponse } from "./HttpResponse"
 import { takeBody, takeResponse } from "./rxjs-interop"
-import { NetworkClient } from "../NetworkClient"
+import { NetworkClient } from "../core/NetworkClient"
 
 export type HttpRequestOptions<T> = Omit<
   HttpRequestInit<T>,

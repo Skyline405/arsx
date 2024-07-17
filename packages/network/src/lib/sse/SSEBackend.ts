@@ -1,5 +1,5 @@
-import { NetworkStream } from "../NetworkStream"
-import { NetworkHandler } from "../NetworkHandler"
+import { NetworkStream } from "../core/NetworkStream"
+import { NetworkHandler } from "../core/NetworkHandler"
 
 export const sseBackend = <T>(url: string, withCredentials?: boolean): NetworkHandler<void, T> =>
   () => new NetworkStream((sub) => {
