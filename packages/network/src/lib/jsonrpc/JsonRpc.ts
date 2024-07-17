@@ -10,26 +10,24 @@ export namespace JsonRpc {
     readonly message: string
   } & PartialIf<T, { readonly data: T }>
 
-  export interface Message {
+  export type Message = {
     readonly id: Id
+    readonly jsonrpc?: '2.0'
   }
 
-  export interface Request<T = unknown> extends Message {
-    readonly params: T
+  export type Request<T = any> = {
+    readonly params?: unknown
     readonly method: string
-  }
-
-  export type RequestBody = Request & {
-    readonly jsonrpc: '2.0'
-  }
+  } & PartialIf<T, { readonly params: T }>
+    & Partial<Message>
 
   export type Notification<T = unknown> = Omit<Request<T>, 'id'>
 
-  export interface Success<T = unknown> extends Message {
+  export type Success<T = unknown> = Message & {
     readonly result: T
   }
 
-  export interface Error<T = undefined> extends Message {
+  export type Error<T = undefined> = Message & {
     readonly error: ErrorObject<T>
   }
 

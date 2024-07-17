@@ -1,27 +1,20 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { lastValueFrom, map } from "rxjs"
-import { NetworkHandlerBuilder } from "../NetworkHandler"
+import { map } from "rxjs"
 import { NetworkStream } from "../NetworkStream"
 import { JsonRpc } from "./JsonRpc"
-import { createIntGenerator } from "./utils"
 import { NetworkContext } from "../NetworkContext"
-import { takeResult } from "./rxjs-interop"
+import { NetworkClient } from "../NetworkClient"
 
-export class JsonRpcClient {
-  constructor(
-    private handler: NetworkHandlerBuilder<JsonRpc.Request, JsonRpc.Response>,
-    private readonly idGenerator: Generator<unknown> = createIntGenerator(),
-  ) {}
-
+export class JsonRpcClient extends NetworkClient<JsonRpc.Request, JsonRpc.Response> {
   request<O>(
     request: JsonRpc.Request,
-    context: NetworkContext = new NetworkContext(),
+    context?: NetworkContext,
   ): NetworkStream<O> {
-    return this.handler(context)(request)
+    return this.handle(request, context)
       .pipe(
         map((message) => {
           if (JsonRpc.isSuccess<O>(message)) {
-            return message
+            return message.result
           }
 
           if (JsonRpc.isError(message)) {
@@ -36,26 +29,22 @@ export class JsonRpcClient {
             id: null,
           } satisfies JsonRpc.Error
         }),
-        takeResult(),
       )
   }
 
   send<O>(method: string, params: unknown, context?: NetworkContext): NetworkStream<O>
   send<O>(method: string, params?: unknown, context?: NetworkContext): NetworkStream<O> {
-    const { value: id } = this.idGenerator.next()
     return this.request<O>({
-      id,
       method,
       params,
     }, context)
   }
 
-  notify(method: string, params: unknown): Promise<void>
-  async notify(method: string, params?: unknown): Promise<void> {
-    await lastValueFrom(this.request({
-      id: null,
-      method,
-      params,
-    }))
-  }
+  // notify(method: string, params: unknown, context?: NetworkContext): Promise<void>
+  // async notify(method: string, params?: unknown, context?: NetworkContext): Promise<void> {
+  //   await lastValueFrom(this.request({
+  //     method,
+  //     params,
+  //   }, context))
+  // }
 }

@@ -1,24 +1,28 @@
-import { map, of, tap } from 'rxjs'
+import { finalize, map, of, tap } from 'rxjs'
 import { HttpClient } from '../HttpClient'
 import { HttpBackend, HttpResponse } from '../public-api'
 
 const createHttpClient =
   (backend: HttpBackend) => new HttpClient(backend)
 
+const echoBackend: HttpBackend = (context) => (request) =>
+  of(request).pipe(
+    map((request) => new HttpResponse({
+      url: request.url,
+      body: request.body,
+      headers: request.headers,
+    }))
+  )
+
 describe('HttpClient', () => {
   describe('should be able to send requests', () => {
-    it('via "send" method', () => new Promise<void>((done) => {
+    it('via "request" method', () => new Promise<void>((done) => {
       const onceCheckFn = jest.fn()
 
-      const backend: HttpBackend = (request) => of(request).pipe(
-        map((request) => new HttpResponse({
-          url: request.url,
-          body: request.body,
-          headers: request.headers,
-        }))
-      )
-      const http = createHttpClient(backend)
-      http.send('POST', 'https://example.com/api', {
+      const http = createHttpClient(echoBackend)
+      http.request({
+        method: 'POST',
+        url: 'https://example.com/api',
         body: { some: 'body' },
         headers: [['X-TraceID', 'trace-id']],
         responseType: 'json',
@@ -31,10 +35,8 @@ describe('HttpClient', () => {
             expect(response.body).toEqual({ some: 'body' })
             expect(response.url).toEqual('https://example.com/api')
           }),
-        )
-        .subscribe({
-          complete: done,
-        })
+          finalize(done),
+        ).subscribe()
     }))
   })
 })
