@@ -38,5 +38,16 @@ describe('HttpClient', () => {
           finalize(done),
         ).subscribe()
     }))
+
+    it('via "send" method', () => new Promise<void>((done) => {
+      const http = createHttpClient(echoBackend)
+      http.send('POST', 'https://example.com/api', { body: 'some' }).pipe(
+          tap((response) => {
+            expect(response).not.toBeInstanceOf(HttpResponse)
+            expect(response).toEqual('some')
+          }),
+          finalize(done),
+        ).subscribe()
+    }))
   })
 })
