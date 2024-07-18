@@ -1,7 +1,13 @@
+import { isObject } from "../../utils/typeof"
+
+export type HttpHeadersRecord = Record<string, string>
+export type HttpHeadersArray = Array<[string, string]>
+
 export type HttpHeadersInit =
-  | Array<[string, string]>
-  | Record<string, string | string[]>
+  | HttpHeadersArray
+  | HttpHeadersRecord
   | HttpHeaders
+  | Headers
   | string
 
 type HeadersKey = string & {
@@ -15,7 +21,7 @@ function normalizeKey(key: string): HeadersKey {
 }
 
 export class HttpHeaders {
-  readonly #map = new Map<HeadersKey, string[]>()
+  readonly #headers = new Map<HeadersKey, string[]>()
 
   constructor(init?: HttpHeadersInit | null) {
     if (init != null) {
@@ -23,16 +29,16 @@ export class HttpHeaders {
         init.forEach((values, key) => {
           this.append(key, values)
         })
+      } else if (typeof Headers !== 'undefined' && init instanceof Headers) {
+        init.forEach((values, key) => {
+          this.append(key, values)
+        })
       } else if (Array.isArray(init)) {
         init.forEach(([key, value]) => {
           this.append(key, value)
         })
-      } else if (typeof init === 'object') {
-        Object.keys(init).forEach((key) => {
-          if (!Object.hasOwn(init, key)) return
-          const value = init[key]
-          this.append(key, value)
-        })
+      } else if (isObject(init)) {
+        this.appendFromRecord(init as HttpHeadersRecord)
       } else if (typeof init === 'string') {
         this.appendFromString(init)
       }
@@ -41,7 +47,7 @@ export class HttpHeaders {
 
   get(name: string): string[] {
     const key = normalizeKey(name)
-    const list = this.#map.get(key) ?? []
+    const list = this.#headers.get(key) ?? []
     return [...list]
   }
 
@@ -55,7 +61,7 @@ export class HttpHeaders {
     const list = this.get(key)
     const values = Array.isArray(value) ? value : value.split(',')
     values.forEach((val) => list.push(String(val.trim())))
-    this.#map.set(key, list)
+    this.#headers.set(key, list)
   }
 
   appendFromString(value: string): void {
@@ -68,6 +74,14 @@ export class HttpHeaders {
     })
   }
 
+  appendFromRecord(init: HttpHeadersRecord): void {
+    Object.keys(init).forEach((key) => {
+      if (!Object.hasOwn(init, key)) return
+      const value = init[key]
+      this.append(key, value)
+    })
+  }
+
   delete(name: string, value?: string | string[]): void {
     const key = normalizeKey(name)
 
@@ -75,11 +89,11 @@ export class HttpHeaders {
       const values = Array.isArray(value) ? value : [value]
       const list = this.get(key)
       const result = list.filter((val) => !values.includes(val))
-      if (result.length) this.#map.set(key, result)
-      else this.#map.delete(key)
+      if (result.length) this.#headers.set(key, result)
+      else this.#headers.delete(key)
     }
 
-    this.#map.delete(key)
+    this.#headers.delete(key)
   }
 
   has(key: string, value?: string): boolean {
@@ -91,6 +105,26 @@ export class HttpHeaders {
   forEach(
     callback: (values: string[], name: string, parent: HttpHeaders) => void,
   ): void {
-    this.#map.forEach((values, name) => callback([...values], name, this))
+    this.#headers.forEach((values, name) => callback([...values], name, this))
+  }
+
+  keys(): string[] {
+    return [...this.#headers.keys()]
+  }
+
+  toArray(): HttpHeadersArray {
+    const result: HttpHeadersArray = []
+    this.forEach((values, key) => {
+      result.push([key, values.join(',')])
+    })
+    return result
+  }
+
+  toRecord(): HttpHeadersRecord {
+    const result: HttpHeadersRecord = {}
+    this.forEach((values, key) => {
+      result[key] = values.join(',')
+    })
+    return result
   }
 }

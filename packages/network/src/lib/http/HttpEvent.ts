@@ -26,7 +26,7 @@ export abstract class HttpProgressEvent implements IHttpEvent {
 
   constructor(
     readonly loaded: number,
-    readonly total: number,
+    readonly total?: number,
   ) {}
 }
 
@@ -39,7 +39,7 @@ export class HttpDownloadProgressEvent extends HttpProgressEvent {
 
   constructor(
     loaded: number,
-    total: number,
+    total?: number,
     readonly partialText?: string
   ) {
     super(loaded, total)

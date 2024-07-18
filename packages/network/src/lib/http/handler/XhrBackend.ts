@@ -26,7 +26,6 @@ export const xhrBackend = (
 ): HttpBackend =>
   () => (request) =>
     of(request).pipe(
-      take(1),
       tap((request) => {
         if (request.method.toUpperCase() === 'JSONP')
           throw new Error(`"JSONP" method is not supported by "${xhrBackend.name}"`)

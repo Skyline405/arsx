@@ -5,6 +5,7 @@ import { HttpMethod, HttpRequest, HttpRequestInit } from "./HttpRequest"
 import { HttpResponse } from "./HttpResponse"
 import { takeBody, takeResponse } from "./rxjs-interop"
 import { NetworkClient } from "../core/NetworkClient"
+import { NetworkContext } from "./public-api"
 
 export type HttpRequestOptions<T> = Omit<
   HttpRequestInit<T>,
@@ -16,12 +17,13 @@ export type HttpRequestOptions<T> = Omit<
 export class HttpClient extends NetworkClient<HttpRequest, HttpEvent> {
   request<O, I = any>(
     requestInit: HttpRequest<I, O> | HttpRequestInit<I>,
+    context?: NetworkContext,
   ): NetworkStream<HttpResponse<O>> {
     const request = requestInit instanceof HttpRequest
       ? requestInit
       : new HttpRequest(requestInit)
 
-    return this.handle(request, request.context)
+    return this.handle(request, context)
       .pipe(
         takeResponse(),
       )
@@ -43,7 +45,7 @@ export class HttpClient extends NetworkClient<HttpRequest, HttpEvent> {
       url,
     })
 
-    return this.request<R, T>(request)
+    return this.request<R, T>(request, options?.context)
       .pipe(
         takeResponse(),
         takeBody(),

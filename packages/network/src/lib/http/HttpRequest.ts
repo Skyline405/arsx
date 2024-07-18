@@ -1,5 +1,4 @@
 import { PartialIf } from "../../types/utils"
-import { NetworkContext } from "../core/NetworkContext"
 import { HttpHeaders, HttpHeadersInit } from "./HttpHeaders"
 import {
   isArrayBuffer,
@@ -9,21 +8,10 @@ import {
   isString,
   isUrlSearchParams,
 } from '../../utils/typeof'
+import { HttpResponseType } from "./HttpCodec"
+import { NetworkContext } from "./public-api"
 
 const ResponseTypeSymbol = Symbol()
-
-export type HttpResponseType =
-  | 'json'
-  | 'text'
-  | 'blob'
-  | 'arraybuffer'
-
-export type SerializedBody =
-  | ArrayBuffer
-  | Blob
-  | FormData
-  | string
-  | null
 
 export type HttpMethod =
   | 'GET'
@@ -57,7 +45,6 @@ export class HttpRequest<T = any, R = any> {
   readonly withCredentials: boolean
   readonly responseType: HttpResponseType
   readonly reportProgress: boolean
-  readonly context: NetworkContext
 
   constructor(init: HttpRequestInit<T>) {
     this.method = init.method
@@ -68,7 +55,6 @@ export class HttpRequest<T = any, R = any> {
     this.headers = new HttpHeaders(init.headers)
     this.responseType = (init.responseType || 'json')
     this.reportProgress = init.reportProgress ?? false
-    this.context = init.context ?? new NetworkContext()
   }
 
   clone<V = T>(update: Partial<HttpRequestInit<V>> = {}): HttpRequest<V, R> {
@@ -81,7 +67,6 @@ export class HttpRequest<T = any, R = any> {
       url: update.url ?? this.url,
       withCredentials: update.withCredentials ?? this.withCredentials,
       reportProgress: update.reportProgress ?? this.reportProgress,
-      context: update.context ?? this.context
     } as Required<HttpRequestInit<V>>)
   }
 
@@ -122,4 +107,33 @@ export class HttpRequest<T = any, R = any> {
   }
 
   protected [ResponseTypeSymbol]!: R
+}
+
+export function buildRequestParams(request: HttpRequest, baseUrl?: string) {
+  const url = new URL(request.url, baseUrl)
+  const params = new URLSearchParams(request.params)
+  url.search = params.toString()
+
+  const headers = new HttpHeaders(request.headers)
+
+  if (!headers.has('Accept')) {
+    headers.set('Accept', 'application/json, text/plain, */*')
+  }
+
+  if (!headers.has('Content-Type')) {
+    const contentType = request.detectContentType()
+    if (contentType != null) {
+      headers.set('Content-Type', contentType)
+    }
+  }
+
+  return {
+    method: request.method,
+    url: url.href,
+    headers,
+    body: request.serializeBody(),
+    reportProgress: request.reportProgress,
+    responseType: request.responseType,
+    withCredentials: request.withCredentials,
+  }
 }

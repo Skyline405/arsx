@@ -32,7 +32,7 @@ abstract class HttpResponseBase {
     defaultStatusText = 'OK',
   ) {
     this.headers = init.headers ?? new HttpHeaders()
-    this.status = init.status || defaultStatus
+    this.status = init.status ?? defaultStatus
     this.statusText = init.statusText ?? defaultStatusText
     this.url = init.url
   }
