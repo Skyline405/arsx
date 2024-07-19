@@ -134,3 +134,12 @@ export class HttpHeaders {
     return result
   }
 }
+
+// Common headers
+
+export const HTTP_HEADER = {
+  X_REQUEST_URL: 'X-Request-URL',
+  CONTENT_TYPE: 'Content-Type',
+  CONTENT_LENGTH: 'Content-Length',
+  ACCEPT: 'Accept',
+} as const

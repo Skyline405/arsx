@@ -87,3 +87,13 @@ export class HttpErrorResponse<T = unknown> extends HttpResponseBase {
     this.message = `Status: ${this.status} | StatusText: ${this.statusText}`
   }
 }
+
+export function getContentHeaders(headers: HttpHeaders) {
+  const type = headers.get('Content-Type') ?? undefined
+  const length = headers.get('Content-Length')
+
+  return {
+    contentType: type,
+    contentLength: length ? parseInt(length) : undefined,
+  }
+}

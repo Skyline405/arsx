@@ -5,30 +5,33 @@ import { NetworkStream } from "../../core/NetworkStream"
 import { HttpDownloadProgressEvent, HttpEvent, HttpSentEvent } from "../HttpEvent"
 import { buildRequestParams } from "../HttpRequest"
 import { HttpHeaders } from "../HttpHeaders"
-import { HttpErrorResponse, HttpHeaderResponse, HttpResponse } from "../HttpResponse"
+import { HttpErrorResponse, HttpHeaderResponse, HttpResponse, getContentHeaders } from "../HttpResponse"
 import { decodeResponseBody } from "../HttpCodec"
 
 export const fetchBackend = (
   baseUrl?: string,
 ): HttpBackend =>
   (context) => (request) => {
-    const { url, headers, body, method, withCredentials, responseType } = buildRequestParams(request, baseUrl)
+    const {
+      url, headers, body, method, withCredentials,
+      responseType, reportProgress,
+    } = buildRequestParams(request, baseUrl)
 
-    return of(request).pipe(
-      switchMap(() => {
-        return fromFetch(url, {
-          body,
-          method,
-          credentials: withCredentials ? 'include' : undefined,
-          headers: headers.toRecord(),
-        })
-      }),
+    if (method.toUpperCase() === 'JSONP')
+      throw new Error(`"JSONP" method is not supported by "${fetchBackend.name}"`)
+
+    return fromFetch(url, {
+      body,
+      method,
+      credentials: withCredentials ? 'include' : undefined,
+      headers: headers.toRecord(),
+    }).pipe(
       concatMap((response) => {
         return new NetworkStream<HttpEvent<any>>((sub) => {
           const { status, statusText } = response
           const headers = new HttpHeaders(response.headers)
 
-          if (request.reportProgress) {
+          if (reportProgress) {
             sub.next(new HttpHeaderResponse({
               headers,
               status,
@@ -54,7 +57,7 @@ export const fetchBackend = (
                     tap((value) => {
                       receivedLength += value.length
 
-                      if (!request.reportProgress) return
+                      if (!reportProgress) return
 
                       if (responseType === 'text') {
                         if (partialText == null) partialText = ''
@@ -74,7 +77,8 @@ export const fetchBackend = (
               }),
               map((body) => {
                 const isOk = status >= 200 && status < 300
-                const responseInit = { status, statusText, headers, url }
+                const responseUrl = response.url ?? headers.get('X-Request-URL') ?? url
+                const responseInit = { status, statusText, headers, url: responseUrl }
 
                 if (isOk) {
                   return new HttpResponse({
@@ -96,16 +100,6 @@ export const fetchBackend = (
       startWith(new HttpSentEvent()),
     )
   }
-
-function getContentHeaders(headers: HttpHeaders) {
-  const type = headers.get('Content-Type') ?? undefined
-  const length = headers.get('Content-Length')
-
-  return {
-    contentType: type,
-    contentLength: length ? parseInt(length) : undefined,
-  }
-}
 
 function concatChunks(chunks: Uint8Array[], length: number): Uint8Array {
   let cursor = 0
