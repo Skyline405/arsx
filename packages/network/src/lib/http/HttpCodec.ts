@@ -12,6 +12,8 @@ export type HttpResponseBody =
   | string
   | null
 
+const XSS_PREFIX = /^\)\]\}',?\n/
+
 export function decodeResponseBody(
   body: Uint8Array,
   responseType: HttpResponseType,
@@ -31,7 +33,11 @@ export function decodeText(value: ArrayBuffer): string {
 }
 
 export function decodeJson<T extends object>(value: ArrayBuffer): T | null {
-  const text = decodeText(value)
+  const text = stripXssPrefix(decodeText(value))
   if (text === '') return null
   return JSON.parse(text)
+}
+
+export function stripXssPrefix(value: string): string {
+  return value.replace(XSS_PREFIX, '')
 }

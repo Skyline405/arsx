@@ -9,6 +9,7 @@ export type HttpHeadersInit =
   | HttpHeaders
   | Headers
   | string
+  | Record<string, string | string[]>
 
 type HeadersKey = string & {
   [k: symbol]: symbol
@@ -45,10 +46,15 @@ export class HttpHeaders {
     }
   }
 
-  get(name: string): string[] {
+  get(name: string): string | undefined {
     const key = normalizeKey(name)
-    const list = this.#headers.get(key) ?? []
-    return [...list]
+    const values = this.#headers.get(key)
+    return values?.[0]
+  }
+
+  getAll(name: string): string[] {
+    const key = normalizeKey(name)
+    return [...this.#headers.get(key) ?? []]
   }
 
   set(name: string, value: string | string[]): void {
@@ -58,7 +64,7 @@ export class HttpHeaders {
 
   append(name: string, value: string | string[]): void {
     const key = normalizeKey(name)
-    const list = this.get(key)
+    const list = this.getAll(key)
     const values = Array.isArray(value) ? value : value.split(',')
     values.forEach((val) => list.push(String(val.trim())))
     this.#headers.set(key, list)
@@ -87,7 +93,7 @@ export class HttpHeaders {
 
     if (value != null) {
       const values = Array.isArray(value) ? value : [value]
-      const list = this.get(key)
+      const list = this.getAll(key)
       const result = list.filter((val) => !values.includes(val))
       if (result.length) this.#headers.set(key, result)
       else this.#headers.delete(key)
@@ -97,7 +103,7 @@ export class HttpHeaders {
   }
 
   has(key: string, value?: string): boolean {
-    const list = this.get(key)
+    const list = this.getAll(key)
     if (value == null) return list.length > 0
     return list.includes(value)
   }

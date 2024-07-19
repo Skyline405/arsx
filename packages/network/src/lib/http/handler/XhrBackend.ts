@@ -1,4 +1,4 @@
-import { from, map, of, switchMap, take, tap } from "rxjs"
+import { from, map, of, switchMap, tap } from "rxjs"
 import { NetworkStream } from "../../core/NetworkStream"
 import { HttpDownloadProgressEvent, HttpEvent, HttpSentEvent, HttpUploadProgressEvent } from "../HttpEvent"
 import { HttpHeaders } from "../HttpHeaders"
@@ -10,7 +10,7 @@ function partialFromXhr(xhr: XMLHttpRequest): () => HttpHeaderResponse {
   const status = xhr.status
   const statusText = xhr.statusText
   const headers = new HttpHeaders(xhr.getAllResponseHeaders())
-  const url = xhr.responseURL || headers.get('X-Request-URL').join('')
+  const url = xhr.responseURL || headers.get('X-Request-URL')
   const headerResponse = new HttpHeaderResponse({
     status,
     statusText,
