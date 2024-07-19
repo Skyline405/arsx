@@ -4,16 +4,19 @@ export function isArrayBuffer(value: unknown): value is ArrayBuffer {
 
 export function isBlob(value: unknown): value is Blob {
   // Blob is not defined in nodejs
-  return typeof Blob !== 'undefined' && value instanceof Blob
+  return typeof Blob !== 'undefined'
+    && value instanceof Blob
 }
 
 export function isFormData(value: unknown): value is FormData {
   // FormData is not defined in nodejs
-  return typeof FormData !== 'undefined' && value instanceof FormData
+  return typeof FormData !== 'undefined'
+    && value instanceof FormData
 }
 
 export function isUrlSearchParams(value: unknown): value is URLSearchParams {
-  return value instanceof URLSearchParams
+  return typeof URLSearchParams !== 'undefined'
+    && value instanceof URLSearchParams
 }
 
 export function isString(value: unknown): value is string {

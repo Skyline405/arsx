@@ -1,14 +1,6 @@
 import { PartialIf } from "../../types/utils"
 import { HttpHeaders, HttpHeadersInit } from "./HttpHeaders"
-import {
-  isArrayBuffer,
-  isBlob,
-  isFormData,
-  isNull,
-  isString,
-  isUrlSearchParams,
-} from '../../utils/typeof'
-import { HttpResponseType } from "./HttpCodec"
+import { HttpResponseType, detectContentType, encodeBody } from "./HttpCodec"
 import { NetworkContext } from "./public-api"
 
 const ResponseTypeSymbol = Symbol()
@@ -70,46 +62,10 @@ export class HttpRequest<T = any, R = any> {
     } as Required<HttpRequestInit<V>>)
   }
 
-  serializeBody(): T | string | null {
-    const isSpecialType = [
-      isArrayBuffer,
-      isBlob,
-      isFormData,
-      isUrlSearchParams,
-      isString,
-      isNull,
-    ].some((typeGuard) => typeGuard(this.body))
-
-    if (isSpecialType) return this.body
-
-    if (typeof this.body === 'object' || typeof this.body === 'boolean') {
-      return JSON.stringify(this.body)
-    }
-
-    return this.body
-  }
-
-  detectContentType(): string | undefined {
-    const isUndefinedType = [
-      isArrayBuffer,
-      isFormData,
-      isNull,
-    ].some((typeGuard) => typeGuard(this.body))
-
-    if (isUndefinedType) return
-    if (isString(this.body)) return 'text/plain'
-    if (typeof this.body === 'object'
-      || typeof this.body === 'number'
-      || typeof this.body === 'boolean')
-      return 'application/json'
-
-    return
-  }
-
   protected [ResponseTypeSymbol]!: R
 }
 
-export function buildRequestParams(request: HttpRequest, baseUrl?: string) {
+export function buildRequestParams(request: HttpRequest<unknown>, baseUrl?: string) {
   const url = new URL(request.url, baseUrl)
   const params = new URLSearchParams(request.params)
   url.search = params.toString()
@@ -121,7 +77,7 @@ export function buildRequestParams(request: HttpRequest, baseUrl?: string) {
   }
 
   if (!headers.has('Content-Type')) {
-    const contentType = request.detectContentType()
+    const contentType = detectContentType(request.body)
     if (contentType != null) {
       headers.set('Content-Type', contentType)
     }
@@ -131,7 +87,7 @@ export function buildRequestParams(request: HttpRequest, baseUrl?: string) {
     method: request.method,
     url: url.href,
     headers,
-    body: request.serializeBody(),
+    body: encodeBody(request.body),
     reportProgress: request.reportProgress,
     responseType: request.responseType,
     withCredentials: request.withCredentials,

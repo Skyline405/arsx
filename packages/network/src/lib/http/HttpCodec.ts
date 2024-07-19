@@ -1,3 +1,5 @@
+import { isArrayBuffer, isBlob, isFormData, isUrlSearchParams, isString, isNull } from "../../utils/typeof"
+
 export type HttpResponseType =
   | 'json'
   | 'text'
@@ -13,6 +15,48 @@ export type HttpResponseBody =
   | null
 
 const XSS_PREFIX = /^\)\]\}',?\n/
+
+// ENCODER
+
+export function encodeBody(body: unknown): XMLHttpRequestBodyInit | null {
+  const isAutoEncodableType = [
+    isArrayBuffer,
+    isBlob,
+    isFormData,
+    isUrlSearchParams,
+    isString,
+    isNull,
+  ].some((typeGuard) => typeGuard(body))
+
+  if (isAutoEncodableType) return body as XMLHttpRequestBodyInit
+
+  if (typeof body === 'object' || typeof body === 'boolean') {
+    return JSON.stringify(body)
+  }
+
+  return String(body)
+}
+
+export function detectContentType(body: unknown): string | undefined {
+  const isBinaryType = [
+    isArrayBuffer,
+    isFormData,
+    isNull,
+  ].some((typeGuard) => typeGuard(body))
+
+  if (isBinaryType) return undefined
+
+  if (isString(body)) return 'text/plain'
+
+  if (typeof body === 'object'
+    || typeof body === 'number'
+    || typeof body === 'boolean')
+    return 'application/json'
+
+  return undefined
+}
+
+// DECODER
 
 export function decodeResponseBody(
   body: Uint8Array,

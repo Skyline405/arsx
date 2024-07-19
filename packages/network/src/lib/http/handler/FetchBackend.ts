@@ -27,7 +27,7 @@ export const fetchBackend = (
       headers: headers.toRecord(),
     }).pipe(
       concatMap((response) => {
-        return new NetworkStream<HttpEvent<any>>((sub) => {
+        return new NetworkStream<HttpEvent<unknown>>((sub) => {
           const { status, statusText } = response
           const headers = new HttpHeaders(response.headers)
 
