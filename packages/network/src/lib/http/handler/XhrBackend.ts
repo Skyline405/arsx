@@ -19,9 +19,8 @@ export const xhrBackend = (
 
     return from(xhrFactory.load()).pipe(
       map(() => {
-        const { method, url, withCredentials, responseType, headers } = params
+        const { withCredentials, responseType, headers } = params
         const xhr = xhrFactory.build()
-        xhr.open(method, url)
 
         xhr.withCredentials = Boolean(withCredentials)
         xhr.responseType = responseType
@@ -34,15 +33,33 @@ export const xhrBackend = (
       }),
       switchMap((xhr) => {
         return new NetworkStream<HttpEvent<unknown>>((sub) => {
+          const finalizer = new AbortController()
+          const { signal } = finalizer
+
+          let _responseHeaders: HttpHeaders | undefined
+
+          const getResponseParams = () => {
+            if (!_responseHeaders) {
+              _responseHeaders = new HttpHeaders(xhr.getAllResponseHeaders())
+            }
+
+            const { status, statusText, response: body } = xhr
+            const url = xhr.responseURL
+              ?? _responseHeaders.get(HTTP_HEADER.X_REQUEST_URL)
+              ?? params.url
+
+            return {
+              status,
+              statusText,
+              body,
+              headers: _responseHeaders,
+              url,
+            }
+          }
+
           const onLoad = () => {
             const isOk = xhr.status >= 200 && xhr.status < 300
-            const body = xhr.response
-            const { status, statusText } = xhr
-            const headers = new HttpHeaders(xhr.getAllResponseHeaders())
-
-            const url = xhr.responseURL
-              ?? headers.get(HTTP_HEADER.X_REQUEST_URL)
-              ?? params.url
+            const { body, headers, status, statusText, url } = getResponseParams()
 
             if (isOk) {
               sub.next(new HttpResponse({
@@ -65,12 +82,7 @@ export const xhrBackend = (
           }
 
           const onError = (error: ProgressEvent) => {
-            const { status, statusText } = xhr
-            const headers = new HttpHeaders(xhr.getAllResponseHeaders())
-            const url = xhr.responseURL
-              ?? headers.get(HTTP_HEADER.X_REQUEST_URL)
-              ?? params.url
-
+            const { headers, status, statusText, url } = getResponseParams()
 
             sub.error(new HttpErrorResponse({
               error,
@@ -85,11 +97,7 @@ export const xhrBackend = (
 
           const onDownloadProgress = (event: ProgressEvent) => {
             if (!headersSent) {
-              const { status, statusText } = xhr
-              const headers = new HttpHeaders(xhr.getAllResponseHeaders())
-              const url = xhr.responseURL
-                ?? headers.get(HTTP_HEADER.X_REQUEST_URL)
-                ?? params.url
+              const { headers, status, statusText, url } = getResponseParams()
 
               sub.next(new HttpHeaderResponse({
                 headers,
@@ -117,35 +125,25 @@ export const xhrBackend = (
             ))
           }
 
-          xhr.addEventListener('load', onLoad)
-          xhr.addEventListener('error', onError)
-          xhr.addEventListener('timeout', onError)
-          xhr.addEventListener('abort', onError)
+          xhr.addEventListener('load', onLoad, { signal })
+          xhr.addEventListener('error', onError, { signal })
+          xhr.addEventListener('timeout', onError, { signal })
+          xhr.addEventListener('abort', onError, { signal })
 
-          const { reportProgress, body } = params
-
-          if (reportProgress) {
-            xhr.addEventListener('progress', onDownloadProgress)
-            if (body != null) {
-              xhr.upload.addEventListener('progress', onUploadProgress)
-            }
+          if (params.includeDownloadProgress) {
+            xhr.addEventListener('progress', onDownloadProgress, { signal })
           }
 
-          xhr.send(body)
+          if (params.includeUploadProgress) {
+            xhr.upload.addEventListener('progress', onUploadProgress, { signal })
+          }
+
+          xhr.open(params.method, params.url)
+          xhr.send(params.body)
           sub.next(new HttpSentEvent())
 
           return () => {
-            xhr.removeEventListener('load', onLoad)
-            xhr.removeEventListener('error', onError)
-            xhr.removeEventListener('timeout', onError)
-            xhr.removeEventListener('abort', onError)
-
-            if (reportProgress) {
-              xhr.removeEventListener('progress', onDownloadProgress)
-              if (body != null) {
-                xhr.upload.removeEventListener('progress', onUploadProgress)
-              }
-            }
+            finalizer.abort()
 
             if (xhr.readyState !== xhr.DONE) {
               xhr.abort()
