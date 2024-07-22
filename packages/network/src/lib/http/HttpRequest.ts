@@ -68,8 +68,10 @@ export class HttpRequest<T = any> {
 
 // Helpers
 
-const includeProgress = (flag: boolean | HttpRequestProgressType, type: HttpRequestProgressType): boolean =>
-  flag === true || flag === type
+const includeProgress = (
+  flag: boolean | HttpRequestProgressType,
+  type: HttpRequestProgressType
+): boolean => flag === true || flag === type
 
 export function buildRequestParams(request: HttpRequest<unknown>, baseUrl?: string) {
   const { method, body, reportProgress, responseType, withCredentials } = request
@@ -98,7 +100,6 @@ export function buildRequestParams(request: HttpRequest<unknown>, baseUrl?: stri
     url: url.href,
     headers,
     body: encodeBody(body),
-    reportProgress: Boolean(reportProgress),
     responseType,
     withCredentials,
     includeDownloadProgress,

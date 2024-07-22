@@ -14,7 +14,7 @@ export const fetchBackend = (
   (context) => (request) => {
     const {
       url, headers, body, method, withCredentials,
-      responseType, reportProgress,
+      responseType, includeDownloadProgress,
     } = buildRequestParams(request, baseUrl)
 
     if (method.toUpperCase() === 'JSONP')
@@ -30,6 +30,8 @@ export const fetchBackend = (
         return new NetworkStream<HttpEvent<unknown>>((sub) => {
           const { status, statusText } = response
           const headers = new HttpHeaders(response.headers)
+          const responseUrl = response.url ?? headers.get('X-Request-URL') ?? url
+          const responseInit = { status, statusText, headers, url: responseUrl }
 
           of(response)
             .pipe(
@@ -43,7 +45,7 @@ export const fetchBackend = (
 
                 const decoder = new TextDecoder()
 
-                if (reportProgress) {
+                if (includeDownloadProgress) {
                   sub.next(new HttpHeaderResponse({
                     headers,
                     status,
@@ -57,7 +59,7 @@ export const fetchBackend = (
                     tap((value) => {
                       receivedLength += value.length
 
-                      if (!reportProgress) return
+                      if (!includeDownloadProgress) return
 
                       if (responseType === 'text') {
                         if (partialText == null) partialText = ''
@@ -72,13 +74,20 @@ export const fetchBackend = (
                     }),
                     toArray(),
                     map((chunks) => concatChunks(chunks, receivedLength)),
-                    map((buffer) => decodeResponseBody(buffer, responseType, contentType)),
+                    map((buffer) => {
+                      try {
+                        return decodeResponseBody(buffer, responseType, contentType)
+                      } catch (error) {
+                        throw new HttpErrorResponse({
+                          ...responseInit,
+                          error: body,
+                        })
+                      }
+                    }),
                   )
               }),
               map((body) => {
                 const isOk = status >= 200 && status < 300
-                const responseUrl = response.url ?? headers.get('X-Request-URL') ?? url
-                const responseInit = { status, statusText, headers, url: responseUrl }
 
                 if (isOk) {
                   return new HttpResponse({
