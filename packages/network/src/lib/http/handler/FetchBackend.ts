@@ -31,15 +31,6 @@ export const fetchBackend = (
           const { status, statusText } = response
           const headers = new HttpHeaders(response.headers)
 
-          if (reportProgress) {
-            sub.next(new HttpHeaderResponse({
-              headers,
-              status,
-              statusText,
-              url,
-            }))
-          }
-
           of(response)
             .pipe(
               switchMap((response) => {
@@ -51,6 +42,15 @@ export const fetchBackend = (
                 let partialText: string | undefined
 
                 const decoder = new TextDecoder()
+
+                if (reportProgress) {
+                  sub.next(new HttpHeaderResponse({
+                    headers,
+                    status,
+                    statusText,
+                    url,
+                  }))
+                }
 
                 return from(response.body as ReadableStreamLike<Uint8Array>)
                   .pipe(

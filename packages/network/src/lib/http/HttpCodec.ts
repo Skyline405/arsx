@@ -9,7 +9,6 @@ export type HttpResponseType =
 export type HttpResponseBody =
   | ArrayBuffer
   | Blob
-  // | FormData
   | object
   | string
   | null
@@ -59,10 +58,11 @@ export function detectContentType(body: unknown): string | undefined {
 // DECODER
 
 export function decodeResponseBody(
-  body: Uint8Array,
+  body: Uint8Array | null,
   responseType: HttpResponseType,
   contentType?: string,
 ): HttpResponseBody {
+  if (body == null) return body
   switch (responseType) {
     case 'text': return decodeText(body)
     case 'json': return decodeJson(body)
