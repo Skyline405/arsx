@@ -16,7 +16,7 @@ export type HttpRequestOptions<T> = Omit<
 
 export class HttpClient extends NetworkClient<HttpRequest, HttpEvent> {
   request<O, I = any>(
-    requestInit: HttpRequest<I, O> | HttpRequestInit<I>,
+    requestInit: HttpRequest<I> | HttpRequestInit<I>,
     context?: NetworkContext,
   ): NetworkStream<HttpResponse<O>> {
     const request = requestInit instanceof HttpRequest
@@ -39,7 +39,7 @@ export class HttpClient extends NetworkClient<HttpRequest, HttpEvent> {
     url: string,
     options?: HttpRequestOptions<T>
   ): NetworkStream<R> {
-    const request = new HttpRequest<any, R>({
+    const request = new HttpRequest<any>({
       ...options,
       method: method,
       url,

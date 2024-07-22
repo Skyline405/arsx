@@ -60,23 +60,18 @@ export const xhrBackend = (
           const onLoad = () => {
             const isOk = xhr.status >= 200 && xhr.status < 300
             const { body, headers, status, statusText, url } = getResponseParams()
+            const responseInit = { status, statusText, headers, url }
 
             if (isOk) {
               sub.next(new HttpResponse({
+                ...responseInit,
                 body,
-                status,
-                statusText,
-                headers,
-                url,
               }))
               sub.complete()
             } else {
               sub.error(new HttpErrorResponse({
+                ...responseInit,
                 error: body,
-                status,
-                statusText,
-                headers,
-                url,
               }))
             }
           }

@@ -26,7 +26,7 @@ export const jsonRpcHttpHandler = (
     } satisfies Required<JsonRpc.Request>
 
     return backend(context)(
-      new HttpRequest<Required<JsonRpc.Request>, JsonRpc.Response>({
+      new HttpRequest<Required<JsonRpc.Request>>({
         method: 'POST',
         url,
         body,

@@ -11,13 +11,14 @@ export type HttpMethod =
   | 'POST'
   | 'PUT'
   | 'PATCH'
+  // | 'JSONP'
 
 export type HttpRequestProgressType =
   | 'upload'
   | 'download'
 
 export interface HttpRequestInitBase {
-  readonly method: string
+  readonly method?: string
   readonly url: string
   readonly params?: string | Record<string, any> | string[][] | URLSearchParams
   readonly headers?: HttpHeadersInit
@@ -33,7 +34,7 @@ export type HttpRequestInit<T> =
 export class HttpRequest<T = any> {
   readonly method: string
   readonly url: string
-  readonly params?: URLSearchParams
+  readonly params: URLSearchParams
   readonly body: T
   readonly headers: HttpHeaders
   readonly withCredentials: boolean
@@ -41,7 +42,7 @@ export class HttpRequest<T = any> {
   readonly reportProgress: boolean | HttpRequestProgressType
 
   constructor(init: HttpRequestInit<T>) {
-    this.method = init.method
+    this.method = init.method ?? 'GET'
     this.url = init.url
     this.params = new URLSearchParams(init.params)
     this.body = init.body as T

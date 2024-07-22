@@ -27,8 +27,7 @@ const splitInterceptor = <I, O>(
     intercept(next(context), input, context)
 
 export const withInterceptors = <I, O>(
-  list: NetworkInterceptor<I, O>[]
-): NetworkMiddleware<I, O> => (
+  list: NetworkInterceptor<I, O>[],
   backend: NetworkHandler<I, O>,
 ): NetworkHandler<I, O> =>
   list.reduceRight((handlerBuilder, interceptor) =>

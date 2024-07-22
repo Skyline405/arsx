@@ -68,7 +68,7 @@ const debugInterceptor = defineInterceptor((
 
 const chain = withInterceptors([
   debugInteceptor,
-])(lengthBackend())
+], lengthBackend())
 
 chain(context)('hello').subscribe(observer) // emits: 5, complete
 ```
@@ -96,7 +96,7 @@ const logInterceptor = defineInterceptor((
 
 const chain = withInterceptors([
   debugInteceptor,
-])(lengthBackend())
+], lengthBackend())
 
 // create context and set necessary values
 const context = new NetworkContext()
@@ -198,8 +198,7 @@ Interceptors always be applied before backend.
 const rpc = new JsonRpcClient(
   withInterceptors([
     logInterceptor('RPC')
-  ])(
-    jsonRpcHttpHandler(
+  ], jsonRpcHttpHandler(
       'rpc',
       httpXhrBackend()
     )
@@ -214,7 +213,7 @@ const rpc = new JsonRpcClient(
   jsonRpcHttpHandler('https://example.com/api/rpc',
     withInterceptors([
       logInterceptor('HTTP')
-    ])(httpXhrBackend())
+    ], httpXhrBackend())
   )
 )
 ```
@@ -225,10 +224,10 @@ Or both:
 const rpc = new JsonRpcClient(
   withInterceptors([
     logInterceptor('RPC'),
-  ])(jsonRpcHttpHandler('https://example.com/api/rpc',
+  ], jsonRpcHttpHandler('https://example.com/api/rpc',
     withInterceptors([
       logInterceptor('HTTP')
-    ])(httpXhrBackend())
+    ], httpXhrBackend())
   ),
 )
 ```
