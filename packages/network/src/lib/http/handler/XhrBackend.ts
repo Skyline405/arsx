@@ -18,44 +18,38 @@ export const xhrBackend = (
       throw new Error(`"JSONP" method is not supported by "${xhrBackend.name}"`)
 
     return from(xhrFactory.load()).pipe(
-      map(() => {
-        const { withCredentials, responseType, headers } = params
-        const xhr = xhrFactory.build()
-
-        xhr.withCredentials = Boolean(withCredentials)
-        xhr.responseType = responseType
-
-        headers.forEach((values, key) => {
-          xhr.setRequestHeader(key, values.join(','))
-        })
-
-        return xhr
-      }),
+      map(() => xhrFactory.build()),
       switchMap((xhr) => {
         return new NetworkStream<HttpEvent<unknown>>((sub) => {
           const finalizer = new AbortController()
           const { signal } = finalizer
 
-          let _responseHeaders: HttpHeaders | undefined
+          const getResponseParams = ((xhr) => {
+            let headers: HttpHeaders | undefined
+            let url: string | undefined
 
-          const getResponseParams = () => {
-            if (!_responseHeaders) {
-              _responseHeaders = new HttpHeaders(xhr.getAllResponseHeaders())
+            return () => {
+              if (!headers) {
+                headers = new HttpHeaders(xhr.getAllResponseHeaders())
+              }
+
+              if (!url) {
+                url = xhr.responseURL
+                  ?? headers.get(HTTP_HEADER.X_REQUEST_URL)
+                  ?? params.url
+              }
+
+              const { status, statusText, response: body } = xhr
+
+              return {
+                status,
+                statusText,
+                body,
+                headers,
+                url,
+              }
             }
-
-            const { status, statusText, response: body } = xhr
-            const url = xhr.responseURL
-              ?? _responseHeaders.get(HTTP_HEADER.X_REQUEST_URL)
-              ?? params.url
-
-            return {
-              status,
-              statusText,
-              body,
-              headers: _responseHeaders,
-              url,
-            }
-          }
+          })(xhr)
 
           const onLoad = () => {
             const isOk = xhr.status >= 200 && xhr.status < 300
@@ -108,7 +102,7 @@ export const xhrBackend = (
 
             sub.next(new HttpDownloadProgressEvent(
               event.loaded,
-              event.total,
+              event.lengthComputable ? event.total : undefined,
               partialText,
             ))
           }
@@ -133,7 +127,16 @@ export const xhrBackend = (
             xhr.upload.addEventListener('progress', onUploadProgress, { signal })
           }
 
+          // subscribe on events before open
           xhr.open(params.method, params.url)
+
+          xhr.withCredentials = Boolean(params.withCredentials)
+          xhr.responseType = params.responseType
+
+          params.headers.forEach((values, key) => {
+            xhr.setRequestHeader(key, values.join(','))
+          })
+
           xhr.send(params.body)
           sub.next(new HttpSentEvent())
 
