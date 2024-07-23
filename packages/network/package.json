@@ -1,6 +1,6 @@
 {
   "name": "@arsx/net",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "description": "A reactive networking library",
   "author": "Ruslan Anufriev",
   "license": "Apache-2.0",
