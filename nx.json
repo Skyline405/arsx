@@ -29,7 +29,11 @@
     }
   },
   "release": {
+    "changelog": {
+      "workspaceChangelog": false
+    },
     "version": {
+      "conventionalCommits": true,
       "preVersionCommand": "npx nx run-many -t build"
     }
   },
