@@ -3,14 +3,14 @@ import { NetworkStream } from "../../core/NetworkStream"
 import { HttpDownloadProgressEvent, HttpEvent, HttpSentEvent, HttpUploadProgressEvent } from "../HttpEvent"
 import { HTTP_HEADER, HttpHeaders } from "../HttpHeaders"
 import { HttpErrorResponse, HttpHeaderResponse, HttpResponse } from "../HttpResponse"
-import { HttpBackend } from "./HttpHandler"
+import { HttpBackendFactory, HttpHandler } from "./HttpHandler"
 import { XhrFactory } from "./XhrFactory"
 import { buildRequestParams } from "../HttpRequest"
 
-export const xhrBackend = (
+export const xhrBackend = ((
   baseUrl?: string,
   xhrFactory = XhrFactory.create(),
-): HttpBackend =>
+): HttpHandler =>
   (context) => (input) => {
     const params = buildRequestParams(input, baseUrl)
 
@@ -151,3 +151,4 @@ export const xhrBackend = (
       }), // switchMap
     ) // pipe
   }
+) satisfies HttpBackendFactory

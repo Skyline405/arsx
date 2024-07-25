@@ -1,4 +1,5 @@
 export * from './XhrBackend'
 export * from './FetchBackend'
+export * from './HttpBackendFactory'
 export * from './XhrFactory'
 export * from './HttpHandler'

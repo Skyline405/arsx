@@ -1,16 +1,16 @@
 import { ReadableStreamLike, concatMap, from, map, of, startWith, switchMap, tap, toArray } from "rxjs"
 import { fromFetch } from 'rxjs/fetch'
-import { HttpBackend } from "./HttpHandler"
+import { HttpBackendFactory, HttpHandler } from "./HttpHandler"
 import { NetworkStream } from "../../core/NetworkStream"
 import { HttpDownloadProgressEvent, HttpEvent, HttpSentEvent } from "../HttpEvent"
 import { buildRequestParams } from "../HttpRequest"
 import { HttpHeaders } from "../HttpHeaders"
 import { HttpErrorResponse, HttpHeaderResponse, HttpResponse, getContentHeaders } from "../HttpResponse"
-import { decodeResponseBody } from "../HttpCodec"
+import { concatChunks, decodeResponseBody } from "../HttpCodec"
 
-export const fetchBackend = (
+export const fetchBackend = ((
   baseUrl?: string,
-): HttpBackend =>
+): HttpHandler =>
   (context) => (request) => {
     const {
       url, headers, body, method, withCredentials,
@@ -109,12 +109,4 @@ export const fetchBackend = (
       startWith(new HttpSentEvent()),
     )
   }
-
-function concatChunks(chunks: Uint8Array[], length: number): Uint8Array {
-  let cursor = 0
-  return chunks.reduce((res, chunk) => {
-    res.set(chunk, cursor)
-    cursor += chunk.length
-    return res
-  }, new Uint8Array(length))
-}
+) satisfies HttpBackendFactory

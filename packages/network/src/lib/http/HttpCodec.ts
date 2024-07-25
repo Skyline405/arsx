@@ -85,3 +85,15 @@ export function decodeJson<T extends object>(value: ArrayBuffer): T | null {
 export function stripXssPrefix(value: string): string {
   return value.replace(XSS_PREFIX, '')
 }
+
+// Helpers
+
+export function concatChunks(chunks: Uint8Array[], length?: number): Uint8Array {
+  const len = length ?? chunks.reduce((total, chunk) => total + chunk.length, 0)
+  let cursor = 0
+  return chunks.reduce((res, chunk) => {
+    res.set(chunk, cursor)
+    cursor += chunk.length
+    return res
+  }, new Uint8Array(len))
+}
