@@ -73,11 +73,19 @@ const includeProgress = (
   type: HttpRequestProgressType
 ): boolean => flag === true || flag === type
 
+function unescapeSpecialChars(value: string): string {
+  const reg = new RegExp(`%3B|%3A|%40|%26|%3D|%2B|%24|%2C`, 'g')
+  return value.replaceAll(reg, (s) => decodeURIComponent(s))
+}
+
 export function buildRequestParams(request: HttpRequest<unknown>, baseUrl?: string) {
   const { method, body, reportProgress, responseType, withCredentials } = request
   const url = new URL(request.url, baseUrl)
-  const params = new URLSearchParams(request.params)
-  url.search = params.toString()
+  request.params.forEach((value, key) => {
+    url.searchParams.set(key, value)
+  })
+
+  url.search = unescapeSpecialChars(url.searchParams.toString())
 
   const headers = new HttpHeaders(request.headers)
 
