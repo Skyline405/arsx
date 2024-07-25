@@ -12,7 +12,7 @@ export namespace JsonRpc {
 
   export type Message = {
     readonly id: Id
-    readonly jsonrpc?: '2.0'
+    readonly jsonrpc: '2.0'
   }
 
   export type Request<T = any> = {
@@ -44,6 +44,8 @@ export namespace JsonRpc {
   export function isMessage(message: unknown): message is JsonRpc.Message {
     return isObject(message)
       && 'id' in message
+      && 'jsonrpc' in message
+      && message.jsonrpc === '2.0'
   }
 
   export function isRequest<T>(message: unknown): message is JsonRpc.Request<T> {

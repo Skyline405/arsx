@@ -1,39 +1,48 @@
-import { NetworkHandler } from "../core/NetworkHandler"
+import { NetworkHandler, NetworkMiddleware } from "../core/NetworkHandler"
 import { HttpRequest } from "../http/HttpRequest"
 import { JsonRpc } from "./JsonRpc"
 import { takeBody } from "../http/rxjs-interop"
-import { HttpHandler, xhrBackend } from "../http/public-api"
-import { createIntGenerator } from "./utils"
+import { HttpHandler } from "../http/public-api"
+import { Observable, from, of, switchMap } from "rxjs"
 
-export type JsonRpcHandler = NetworkHandler<JsonRpc.Request, JsonRpc.Response>
+export type JsonRpcHandler = NetworkHandler<JsonRpc.Request | JsonRpc.Request[], JsonRpc.Response>
 
-export const jsonRpcHttpHandler = (
-  url: string,
-  backend: HttpHandler = xhrBackend(),
-  idGenerator: Generator<unknown> = createIntGenerator(),
-): NetworkHandler<JsonRpc.Request, JsonRpc.Response> => {
-  const nextId = (id?: JsonRpc.Id): JsonRpc.Id => {
-    if (id !== undefined) return id
-    return idGenerator.next().value
+export const jsonRpcHttpAdapter = ((
+  backend,
+  url = '',
+) => (context) => (input) => {
+  const body = resolveRpcBatch(input)
+  if (!body) throw new TypeError(`JsonRpc request is ${typeof body}`)
+  return backend(context)(
+    new HttpRequest<JsonRpc.Request | JsonRpc.Request[]>({
+      method: 'POST',
+      url,
+      body,
+      responseType: 'json',
+    }),
+  ).pipe(
+    takeBody<JsonRpc.Response | JsonRpc.Response[]>(),
+    switchMap((output) => flatStream(output)),
+  )
+}) satisfies NetworkMiddleware<JsonRpcHandler, HttpHandler>
+
+export const jsonRpcHandler = ((
+  handler: JsonRpcHandler,
+): JsonRpcHandler =>
+  (context) => (input) => handler(context)(input)
+) satisfies NetworkMiddleware<JsonRpcHandler>
+
+// Helpers
+
+function flatStream<T>(value: T | T[]): Observable<T> {
+  if (Array.isArray(value)) return from(value)
+  return of(value)
+}
+
+function resolveRpcBatch<T>(value: T | T[]): T | T[] |  undefined {
+  if (Array.isArray(value)) {
+    if (value.length > 1) return value
+    return value.at(0)
   }
-
-  return (context) => (request) => {
-    const body = {
-      params: undefined,
-      ...request,
-      id: nextId(request.id),
-      jsonrpc: '2.0', // just required by protocol spec
-    } satisfies Required<JsonRpc.Request>
-
-    return backend(context)(
-      new HttpRequest<Required<JsonRpc.Request>>({
-        method: 'POST',
-        url,
-        body,
-        responseType: 'json',
-      }),
-    ).pipe(
-      takeBody<JsonRpc.Response>(),
-    )
-  }
+  return value
 }
