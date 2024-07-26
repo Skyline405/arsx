@@ -5,7 +5,9 @@ import { HttpMethod, HttpRequest, HttpRequestInit } from "./HttpRequest"
 import { HttpResponse } from "./HttpResponse"
 import { takeBody, takeResponse } from "./rxjs-interop"
 import { NetworkClient } from "../core/NetworkClient"
-import { HttpHandler, NetworkContext, httpBackendFactory } from "./public-api"
+import { HttpHandler } from "./handler/HttpHandler"
+import { httpBackendFactory } from "./handler/HttpBackendFactory"
+import { NetworkContext } from "../core/NetworkContext"
 
 export type HttpRequestOptions<T> = Omit<
   HttpRequestInit<T>,
