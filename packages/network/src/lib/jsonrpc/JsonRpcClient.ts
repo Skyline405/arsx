@@ -36,14 +36,7 @@ export class JsonRpcClient extends NetworkClient<JsonRpc.Request, JsonRpc.Respon
       .pipe(
         map((message) => {
           if (!JsonRpc.isMessage(message)) {
-            throw {
-              error: {
-                code: 0,
-                message: 'Unknown Error',
-              },
-              id: null,
-              jsonrpc: '2.0',
-            } satisfies JsonRpc.Error
+            throw new TypeError('response is not an JSONRPC message')
           }
 
           if (JsonRpc.isSuccess<O>(message)) {
@@ -54,14 +47,7 @@ export class JsonRpcClient extends NetworkClient<JsonRpc.Request, JsonRpc.Respon
             throw message
           }
 
-          throw {
-            error: {
-              code: 0,
-              message: 'Unknown Error',
-            },
-            id: null,
-            jsonrpc: '2.0',
-          } satisfies JsonRpc.Error
+          throw new TypeError(`unknown JSONRPC response type: ${message}`)
         }),
       )
   }
@@ -73,12 +59,4 @@ export class JsonRpcClient extends NetworkClient<JsonRpc.Request, JsonRpc.Respon
       params,
     }, context)
   }
-
-  // notify(method: string, params: unknown, context?: NetworkContext): Promise<void>
-  // async notify(method: string, params?: unknown, context?: NetworkContext): Promise<void> {
-  //   await lastValueFrom(this.request({
-  //     method,
-  //     params,
-  //   }, context))
-  // }
 }
