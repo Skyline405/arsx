@@ -2,10 +2,11 @@ import { from, map, switchMap } from "rxjs"
 import { NetworkStream } from "../../core/NetworkStream"
 import { HttpDownloadProgressEvent, HttpEvent, HttpSentEvent, HttpUploadProgressEvent } from "../HttpEvent"
 import { HTTP_HEADER, HttpHeaders } from "../HttpHeaders"
-import { HttpErrorResponse, HttpHeaderResponse, HttpResponse } from "../HttpResponse"
+import { HttpErrorResponse, HttpHeaderResponse, HttpResponse, getContentHeaders } from "../HttpResponse"
 import { HttpBackendFactory, HttpHandler } from "./HttpHandler"
 import { XhrFactory } from "./XhrFactory"
 import { buildRequestParams } from "../HttpRequest"
+import { decodeResponseBody } from "../HttpCodec"
 
 export const xhrBackend = ((
   baseUrl?: string,
@@ -39,7 +40,11 @@ export const xhrBackend = ((
                   ?? params.url
               }
 
-              const { status, statusText, response: body } = xhr
+              const { status, statusText } = xhr
+              const response: ArrayBuffer = xhr.response
+              const { contentType } = getContentHeaders(headers)
+
+              const body = decodeResponseBody(new Uint8Array(response), params.responseType, contentType)
 
               return {
                 status,
@@ -131,7 +136,7 @@ export const xhrBackend = ((
           xhr.open(params.method, params.url)
 
           xhr.withCredentials = Boolean(params.withCredentials)
-          xhr.responseType = params.responseType
+          xhr.responseType = 'arraybuffer'
 
           params.headers.forEach((values, key) => {
             xhr.setRequestHeader(key, values.join(','))
