@@ -10,9 +10,11 @@ const fakeRpcHandler = (): NetworkHandler<JsonRpc.Request, JsonRpc.Response> =>
           case "add": return {
             id: 1,
             result: `Response for: ${req.params}`,
+            jsonrpc: '2.0',
           } satisfies JsonRpc.Success<string>
           default: return {
             id: 1,
+            jsonrpc: '2.0',
             error: {
               code: -1,
               message: 'Method ${0} not found',
@@ -63,7 +65,8 @@ describe('JsonRpcClient', () => {
                   message: 'Method ${0} not found',
                   data: 'not found',
                 },
-                id: 1
+                id: 1,
+                jsonrpc: '2.0',
               } satisfies JsonRpc.Error<string>)
               done()
             }
