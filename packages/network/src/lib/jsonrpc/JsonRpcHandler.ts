@@ -26,12 +26,6 @@ export const jsonRpcHttpAdapter = ((
   )
 }) satisfies NetworkMiddleware<JsonRpcHandler, HttpHandler>
 
-export const jsonRpcHandler = ((
-  handler: JsonRpcHandler,
-): JsonRpcHandler =>
-  (context) => (input) => handler(context)(input)
-) satisfies NetworkMiddleware<JsonRpcHandler>
-
 // Helpers
 
 function flatStream<T>(value: T | T[]): Observable<T> {
