@@ -5,7 +5,7 @@ import { HttpMethod, HttpRequest, HttpRequestInit } from "./HttpRequest"
 import { HttpResponse } from "./HttpResponse"
 import { takeBody, takeResponse } from "./rxjs-interop"
 import { NetworkClient } from "../core/NetworkClient"
-import { NetworkContext } from "./public-api"
+import { HttpHandler, NetworkContext, httpBackendFactory } from "./public-api"
 
 export type HttpRequestOptions<T> = Omit<
   HttpRequestInit<T>,
@@ -15,6 +15,10 @@ export type HttpRequestOptions<T> = Omit<
 >
 
 export class HttpClient extends NetworkClient<HttpRequest, HttpEvent> {
+  constructor(
+    backend: HttpHandler = httpBackendFactory(),
+  ) { super(backend) }
+
   request<O, I = any>(
     requestInit: HttpRequest<I> | HttpRequestInit<I>,
     context?: NetworkContext,
