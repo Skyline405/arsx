@@ -74,16 +74,7 @@ export const fetchBackend = ((
                     }),
                     toArray(),
                     map((chunks) => concatChunks(chunks, receivedLength)),
-                    map((buffer) => {
-                      try {
-                        return decodeResponseBody(buffer, responseType, contentType)
-                      } catch (error) {
-                        throw new HttpErrorResponse({
-                          ...responseInit,
-                          error: body,
-                        })
-                      }
-                    }),
+                    map((buffer) => decodeResponseBody(buffer, responseType, contentType)),
                   )
               }),
               map((body) => {
@@ -103,7 +94,6 @@ export const fetchBackend = ((
               })
             )
             .subscribe(sub)
-
         })
       }),
       startWith(new HttpSentEvent()),
