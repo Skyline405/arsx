@@ -1,13 +1,12 @@
-# Network
+# Reactive networking library
 
-<!-- [![npm version](https://img.shields.io/badge/npm%20package-0.0.0--alpha-brightgreen)](https://www.npmjs.com/package/@arsx/net) -->
-[![license](https://img.shields.io/badge/license-Apache--2.0-green)]()
+[![license](https://img.shields.io/badge/license-Apache--2.0-green)](https://github.com/Skyline405/arsx/blob/main/packages/network/LICENSE)
 [![npm](https://badgen.net/npm/v/@arsx/net?icon=npm)](https://www.npmjs.com/package/@arsx/net)
 [![downloads](https://badgen.net/npm/dt/@arsx/net?label=downloads)](https://www.npmjs.com/package/@arsx/net)
-<!-- [![npm version](https://badgen.net/npm/v/@arsx/net?icon=npm)](https://www.npmjs.com/package/@arsx/net) -->
-<!-- [![npm downloads](https://badgen.net/npm/dt/@arsx/net?label=downloads)](https://www.npmjs.com/package/vest) -->
 
 A reactive networking library.
+
+## ATTENTION: API is unstable and may be changed in the future releases.
 
 - [Network](#network)
   * [Installation](#installation)
@@ -20,9 +19,10 @@ A reactive networking library.
   * [HttpInterceptor](#httpinterceptor)
   * [Handy RxJs operators](#handy-rxjs-operators)
 - [JsonRpc](#jsonrpc)
-  * [Basic usage](#basic-usage-1)
+  * [Basic usage](#basic-usage)
   * [JsonRpcHandler](#jsonrpchandler)
   * [JsonRpcInterceptor](#jsonrpcinterceptor)
+- [Roadmap](#roadmap)
 - [TODO](#todo)
 
 ## Installation
@@ -37,7 +37,7 @@ The `NetworkHandler` is the basic concept around which the entire architecture o
 It can be some endpoint representing backend or a pass-through handler that can intercept and modify the data flowing through it.
 
 ```ts
-const lengthBackend = (): NetworkHandlerBuilder<string, number> =>
+const lengthBackend = (): NetworkHandler<string, number> =>
   (context) => (input) => of(input).pipe(map(str => str.length))
 
 const backend = lengthBackend()
@@ -110,6 +110,7 @@ chain(context)('hello').subscribe(observer) // emits: 5, complete
 ## Basic usage
 
 ```ts
+// create client with default http backend
 const http = new HttpClient()
 http.get('<url>').subscribe(observer)
 http.post('<url>').subscribe(observer)
@@ -120,7 +121,13 @@ http.send('PUT', { body: 'data' })
 ## Providing base url
 
 ```ts
-const http = new HttpClient(httpXhrBackend('http://example.com/some'))
+// auto choose supporter api by platform
+const http = new HttpClient(httpBackendFactory('http://example.com/some'))
+// or use specifix api
+const http = new HttpClient(xhrBackend('http://example.com/some'))
+// or
+const http = new HttpClient(fetchBackend('http://example.com/some'))
+
 http.get('path').subscribe(observer)
 ```
 
@@ -137,6 +144,7 @@ In everything else it's the same `NetworkInterceptor`.
 Interceptors can be used whith any backends based on `NetworkHandler` concept.
 
 ```ts
+// this interceptor compatible with any data type
 const logInterceptor = (name: string) => {
   const tag = `[${name}]`
   return defineInteceptor((next, input, context) => {
@@ -150,7 +158,7 @@ const logInterceptor = (name: string) => {
 const http = new HttpClient(
   withInterceptor(
     logInterceptor('HTTP'),
-  )(httpXhrBackend())
+  )(httpBackendFactory())
 )
 
 http.get('<url>').subscribe(observer)
@@ -172,11 +180,8 @@ http.handle(request)         // handle is just a client's handler delegate
 ## Basic usage
 
 ```ts
-const rpc = new JsonRpcClient(jsonRpcHttpHandler('https://example.com/api/rpc'))
-// or
-const rpc = new JsonRpcClient(
-  jsonRpcHttpHandler('rpc', httpXhrBackend('https://example.com/api')),
-)
+const rpcBackend = jsonRpcHttpAdapter(httpBackendFactory('https://example.com/api/rpc'))
+const rpc = new JsonRpcClient(rpcBackend)
 
 rpc.send<string>('user.getRoleName', '<uuid>')
   .subscribe(observer) // emit: 'BasicRole'
@@ -195,43 +200,28 @@ In everything else it's the same `NetworkInterceptor`.
 Interceptors always be applied before backend.
 
 ```ts
-const rpc = new JsonRpcClient(
-  withInterceptors([
-    logInterceptor('RPC')
-  ], jsonRpcHttpHandler(
-      'rpc',
-      httpXhrBackend()
-    )
-  )
-)
+const rpcBackend = withInterceptors([
+  logInterceptor('RPC')
+], jsonRpcHttpAdapter(httpBackendFactory()))
 ```
 
-Also we can apply to backend its own middlewares:
+Also we can apply to http backend its own middlewares:
 
 ```ts
-const rpc = new JsonRpcClient(
-  jsonRpcHttpHandler('https://example.com/api/rpc',
-    withInterceptors([
-      logInterceptor('HTTP')
-    ], httpXhrBackend())
-  )
-)
+const httpBackend = withInterceptors([
+  logInterceptor('HTTP')
+], httpBackendFactory())
+
+const rpcBackend = withInterceptors([
+  logInterceptor('RPC')
+], jsonRpcHttpAdapter(httpBackend))
 ```
 
-Or both:
+# Roadmap
 
-```ts
-const rpc = new JsonRpcClient(
-  withInterceptors([
-    logInterceptor('RPC'),
-  ], jsonRpcHttpHandler('https://example.com/api/rpc',
-    withInterceptors([
-      logInterceptor('HTTP')
-    ], httpXhrBackend())
-  ),
-)
-```
+- [ ] Support WebSockets.
+- [ ] Support Server-sent events.
 
 # TODO
 
-- [ ] Support batch requests for JsonRpc.
+- [ ] Make detailed documentation.
