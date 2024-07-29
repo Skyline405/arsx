@@ -55,7 +55,7 @@ There is `withInterceptors` function to help us to compose interceptors into a c
 The `defineInterceptor` helper can be used to describe it as a function:
 
 ```ts
-const debugInterceptor = defineInterceptor((
+const logInterceptor = defineInterceptor((
   next,    // next handler in chain
   input,   // input value
   context, // NetworkContext
@@ -67,7 +67,7 @@ const debugInterceptor = defineInterceptor((
 )
 
 const chain = withInterceptors([
-  debugInteceptor,
+  logInteceptor,
 ], lengthBackend())
 
 chain(context)('hello').subscribe(observer) // emits: 5, complete
@@ -95,7 +95,7 @@ const logInterceptor = defineInterceptor((
 )
 
 const chain = withInterceptors([
-  debugInteceptor,
+  logInteceptor,
 ], lengthBackend())
 
 // create context and set necessary values
