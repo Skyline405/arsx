@@ -1,0 +1,23 @@
+{
+  "name": "@arsx/bloc",
+  "version": "0.0.1",
+  "description": "BLoC pattern implementation for JS",
+  "author": "Ruslan Anufriev",
+  "license": "Apache-2.0",
+  "homepage": "https://www.npmjs.com/package/@arsx/bloc",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Skyline405/arsx/tree/main/packages/bloc"
+  },
+  "dependencies": {
+    "rxjs": "^7.8.1"
+  },
+  "peerDependencies": {
+    "rxjs": "^7.8.1 || ^8.0.0"
+  },
+  "keywords": [
+    "bloc",
+    "bloc pattern",
+    "business logic"
+  ]
+}

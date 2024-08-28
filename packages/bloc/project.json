@@ -1,0 +1,51 @@
+{
+  "name": "bloc",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "packages/bloc/src",
+  "projectType": "library",
+  "release": {
+    "version": {
+      "generatorOptions": {
+        "packageRoot": "dist/{projectRoot}",
+        "currentVersionResolver": "git-tag"
+      }
+    }
+  },
+  "tags": ["type:lib"],
+  "targets": {
+    "nx-release-publish": {
+      "options": {
+        "packageRoot": "dist/{projectRoot}"
+      }
+    },
+    "build": {
+      "executor": "@nx/rollup:rollup",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "main": "packages/bloc/src/index.ts",
+        "outputPath": "dist/packages/bloc",
+        "tsConfig": "packages/bloc/tsconfig.lib.json",
+        "compiler": "swc",
+        "project": "packages/bloc/package.json",
+        "format": ["cjs", "esm"],
+        "assets": [
+          {
+            "glob": "packages/bloc/README.md",
+            "input": ".",
+            "output": "."
+          }
+        ]
+      }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint"
+    },
+    "test": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
+      "options": {
+        "jestConfig": "packages/bloc/jest.config.ts"
+      }
+    }
+  }
+}

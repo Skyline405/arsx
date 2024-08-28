@@ -15,6 +15,7 @@
     "skipDefaultLibCheck": true,
     "baseUrl": ".",
     "paths": {
+      "@arsx/bloc": ["packages/bloc/src/index.ts"],
       "@arsx/net": ["packages/network/src/index.ts"]
     }
   },
