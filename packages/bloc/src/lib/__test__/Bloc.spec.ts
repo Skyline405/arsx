@@ -1,5 +1,4 @@
 import { Bloc } from '../Bloc'
-import { Abstract, Constructor } from '../utils'
 
 const delay = (time = 0) => new Promise((resolve) => setTimeout(resolve, time))
 
@@ -65,7 +64,9 @@ describe('Bloc', () => {
   // WITH CLASSES
 
   describe('using wit classes', () => {
-    abstract class CounterEvent {}
+    abstract class CounterEvent {
+      __id = Symbol()
+    }
     class Increment extends CounterEvent {}
     class Reset extends CounterEvent {}
     class Multiply extends CounterEvent {
@@ -86,8 +87,7 @@ describe('Bloc', () => {
         })
 
         // check for resctrictions
-        // this.on(new Multiply(2), async (event, emit) => {
-        //   await delay(0)
+        // this.on(new Multiply(2), (event, emit) => {
         //   emit(this.state * event.payload)
         // })
       }
@@ -95,7 +95,7 @@ describe('Bloc', () => {
 
     it('should throw error if event not registered', async () => {
       const bloc = new CounterBloc()
-      expect(() => bloc.add(Reset)).toThrow()
+      expect(() => bloc.add(new Reset())).toThrow()
     })
 
     it('should process sync events', async () => {
@@ -112,6 +112,20 @@ describe('Bloc', () => {
       expect(bloc.state).toEqual(2)
       await delay(0)
       expect(bloc.state).toEqual(10)
+    })
+
+    it('should not emit next state when closed', () => {
+      const bloc = new CounterBloc(0)
+      bloc.dispose()
+      expect(bloc.isDisposed).toBeTruthy()
+      expect(() => bloc.add(new Increment())).toThrow()
+    })
+
+    it('should not be disposed more than once', () => {
+      const bloc = new CounterBloc(0)
+      bloc.dispose()
+      expect(bloc.isDisposed).toBeTruthy()
+      expect(() => bloc.dispose()).toThrow()
     })
   })
 })

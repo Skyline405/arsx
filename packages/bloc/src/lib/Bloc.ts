@@ -1,5 +1,5 @@
 import { BehaviorSubject, Subject, Observable, filter, distinctUntilChanged, share } from "rxjs"
-import { Constructor, Enum, asString, getConstructor } from "./utils"
+import { Constructor, asString, getConstructor } from "./utils"
 
 type EmitValue<T> = (value: T) => void
 type EventHander<E, T> = (event: E, emit: EmitValue<T>) => void | Promise<void>
@@ -33,12 +33,16 @@ export abstract class Bloc<BlocEvent, State> {
     return this._state$.getValue()
   }
 
-  private emit(value: State) {
+  get isDisposed(): boolean {
+    return this._state$.closed
+  }
+
+  private emit(value: State): void {
     this._state$.next(value)
   }
 
   protected on<E extends BlocEvent>(
-    event: Constructor<E> | Enum<E>,
+    event: EventKey<E>,
     handler: EventHander<E, State>,
   ): void {
     if (this._events.has(event)) {
@@ -56,7 +60,7 @@ export abstract class Bloc<BlocEvent, State> {
       })
   }
 
-  add<E extends BlocEvent>(event: E) {
+  add<E extends BlocEvent>(event: E): void {
     const eventKey = getEventKey(event)
     const isHandlerExists = this._events.has(eventKey)
     if (!isHandlerExists) {
@@ -65,9 +69,11 @@ export abstract class Bloc<BlocEvent, State> {
     this._eventBus$.next(event)
   }
 
-  dispose() {
-    this._state$.complete()
+  dispose(): void {
     this._eventBus$.complete()
+    this._eventBus$.unsubscribe()
+    this._state$.complete()
+    this._state$.unsubscribe()
   }
 
 }
