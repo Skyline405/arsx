@@ -43,3 +43,5 @@ export function asString<T>(value: T): string {
   if (isPrototype(value)) return constructorName(value)
   return JSON.stringify(value)
 }
+
+export const delay = (time = 0) => new Promise((resolve) => setTimeout(resolve, time))

@@ -1,5 +1,6 @@
-import { BehaviorSubject, Subject, Observable, filter, distinctUntilChanged, share } from "rxjs"
+import { BehaviorSubject, Subject, Observable, filter, distinctUntilChanged, share, of } from "rxjs"
 import { Constructor, asString, getConstructor } from "./utils"
+import { EventTransformer, concurrent } from "./EventTransformer"
 
 type EmitValue<T> = (value: T) => void
 type EventHander<E, T> = (event: E, emit: EmitValue<T>) => void | Promise<void>
@@ -10,7 +11,12 @@ function getEventKey<E>(event: E): EventKey<E> {
 }
 
 export abstract class Bloc<BlocEvent, State> {
-  private readonly _eventBus$ = new Subject<BlocEvent>()
+  static transformer = concurrent()
+
+  private readonly _eventTransformer = Bloc.transformer
+
+  private readonly _eventInput$ = new Subject<BlocEvent>()
+  private readonly _eventSource$ = this._eventInput$.asObservable().pipe(share())
   private readonly _state$: BehaviorSubject<State>
   private readonly _output$: Observable<State>
 
@@ -33,10 +39,6 @@ export abstract class Bloc<BlocEvent, State> {
     return this._state$.getValue()
   }
 
-  get isDisposed(): boolean {
-    return this._state$.closed
-  }
-
   private emit(value: State): void {
     this._state$.next(value)
   }
@@ -44,20 +46,37 @@ export abstract class Bloc<BlocEvent, State> {
   protected on<E extends BlocEvent>(
     event: EventKey<E>,
     handler: EventHander<E, State>,
+    options: {
+      transformer?: EventTransformer<E>
+    } = {},
   ): void {
+    const {
+      transformer = this._eventTransformer as EventTransformer<E>
+    } = options
+
     if (this._events.has(event)) {
       throw new Error(`on(${asString(event)}): handler cannot be registered more than once`)
     }
 
     this._events.add(event)
 
-    this._eventBus$
-      .pipe(
+    transformer(
+      this._eventSource$.pipe(
         filter((value): value is E => getEventKey(value) === event),
-      )
-      .subscribe({
-        next: (event) => handler(event, (value) => this.emit(value)),
-      })
+      ),
+      (event) => {
+        const handleEvent = async () => {
+          try {
+            await handler(event, (value) => this.emit(value))
+          } catch (error) {
+            this.addError(error)
+            throw error
+          }
+        }
+        handleEvent()
+        return of(event)
+      }
+    ).subscribe()
   }
 
   add<E extends BlocEvent>(event: E): void {
@@ -66,12 +85,34 @@ export abstract class Bloc<BlocEvent, State> {
     if (!isHandlerExists) {
       throw new Error(`add(${asString(event)}): handler is not registered and cannot be handled`)
     }
-    this._eventBus$.next(event)
+    try {
+      this.onEvent(event)
+      this._eventInput$.next(event)
+    } catch (error) {
+      this.addError(error)
+      throw error
+    }
+  }
+
+  protected onEvent<E extends BlocEvent>(event: E) {
+    // TODO call bloc observer
+  }
+
+  protected addError(error: unknown): void {
+    this.onError(error)
+  }
+
+  protected onError(error: unknown): void {
+    // TODO call bloc observer
+  }
+
+  get isDisposed(): boolean {
+    return this._state$.closed
   }
 
   dispose(): void {
-    this._eventBus$.complete()
-    this._eventBus$.unsubscribe()
+    this._eventInput$.complete()
+    this._eventInput$.unsubscribe()
     this._state$.complete()
     this._state$.unsubscribe()
   }
