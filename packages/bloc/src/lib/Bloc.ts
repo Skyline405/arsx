@@ -1,6 +1,6 @@
 import { BehaviorSubject, Subject, Observable, filter, distinctUntilChanged, share, of } from "rxjs"
 import { Constructor, asString, getConstructor } from "./utils"
-import { EventTransformer, concurrent } from "./EventTransformer"
+import { BlocEventTransformer, concurrent } from "./BlocEventTransformer"
 
 type EmitValue<T> = (value: T) => void
 type EventHander<E, T> = (event: E, emit: EmitValue<T>) => void | Promise<void>
@@ -47,11 +47,11 @@ export abstract class Bloc<BlocEvent, State> {
     event: EventKey<E>,
     handler: EventHander<E, State>,
     options: {
-      transformer?: EventTransformer<E>
+      transformer?: BlocEventTransformer<E>
     } = {},
   ): void {
     const {
-      transformer = this._eventTransformer as EventTransformer<E>
+      transformer = this._eventTransformer as BlocEventTransformer<E>
     } = options
 
     if (this._events.has(event)) {
