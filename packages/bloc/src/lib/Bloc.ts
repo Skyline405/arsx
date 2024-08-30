@@ -1,8 +1,6 @@
-import { BehaviorSubject, Subject, Observable, filter, distinctUntilChanged, share, of } from "rxjs"
+import { BehaviorSubject, Subject, Observable, filter, distinctUntilChanged, share, OperatorFunction } from "rxjs"
 import { Constructor, asString, getConstructor } from "./utils"
-import { BlocEventTransformer, concurrent } from "./BlocEventTransformer"
-import { BlocChange } from "./BlocChange"
-import { BlocTransition } from "./BlocTransition"
+import { BlocEventMapper, BlocEventTransformer, concurrent } from "./BlocEventTransformer"
 
 type EmitValue<T> = (value: T) => void
 type EventHander<E, T> = (event: E, emit: EmitValue<T>) => void | Promise<void>
@@ -17,8 +15,7 @@ export abstract class Bloc<BlocEvent, State> {
 
   private readonly _eventTransformer = Bloc.transformer
 
-  private readonly _eventInput$ = new Subject<BlocEvent>()
-  private readonly _eventSource$ = this._eventInput$.asObservable().pipe(share())
+  private readonly _event$ = new Subject<BlocEvent>()
   private readonly _state$: BehaviorSubject<State>
   private readonly _output$: Observable<State>
 
@@ -33,6 +30,8 @@ export abstract class Bloc<BlocEvent, State> {
       )
   }
 
+  protected get event$() { return this._event$.asObservable() }
+
   get state$(): Observable<State> {
     return this._output$
   }
@@ -42,16 +41,15 @@ export abstract class Bloc<BlocEvent, State> {
   }
 
   private emit(state: State): void {
-    this.onChange(new BlocChange(this.state, state))
     this._state$.next(state)
   }
 
   protected on<E extends BlocEvent>(
     event: EventKey<E>,
     handler: EventHander<E, State>,
-    options: {
-      transformer?: BlocEventTransformer<E>
-    } = {},
+    options: NoInfer<{
+      transformer?: BlocEventTransformer<BlocEvent>
+    }> = {},
   ): void {
     const {
       transformer = this._eventTransformer as BlocEventTransformer<E>
@@ -63,25 +61,12 @@ export abstract class Bloc<BlocEvent, State> {
 
     this._events.add(event)
 
-    transformer(
-      this._eventSource$.pipe(
-        filter((value): value is E => getEventKey(value) === event),
-      ),
-      (event) => {
-        const handleEvent = async () => {
-          try {
-            await handler(event, (state) => {
-              this.onTransition(new BlocTransition(this.state, state, event))
-              this.emit(state)
-            })
-          } catch (error) {
-            this.addError(error)
-            throw error
-          }
-        }
-        handleEvent()
-        return of(event)
-      }
+    this._event$.pipe(
+      filter((value): value is E => getEventKey(value) === event),
+      transformer(async (event) => {
+        await handler(event, (state) => this.emit(state))
+        return event
+      }),
     ).subscribe()
   }
 
@@ -91,16 +76,7 @@ export abstract class Bloc<BlocEvent, State> {
     if (!isHandlerExists) {
       throw new Error(`add(${asString(event)}): handler is not registered and cannot be handled`)
     }
-    try {
-      this.onEvent(event)
-      this._eventInput$.next(event)
-    } catch (error) {
-      this.addError(error)
-      throw error
-    }
-  }
-  protected addError(error: unknown): void {
-    this.onError(error)
+    this._event$.next(event)
   }
 
   get isDisposed(): boolean {
@@ -108,25 +84,9 @@ export abstract class Bloc<BlocEvent, State> {
   }
 
   dispose(): void {
-    this._eventInput$.complete()
-    this._eventInput$.unsubscribe()
+    this._event$.complete()
+    this._event$.unsubscribe()
     this._state$.complete()
     this._state$.unsubscribe()
-  }
-
-  protected onEvent<E extends BlocEvent>(event: E) {
-    // TODO call bloc observer
-  }
-
-  protected onChange(change: BlocChange<State>): void {
-    // TODO call bloc observer
-  }
-
-  protected onTransition(transition: BlocTransition<BlocEvent, State>): void {
-    // TODO call bloc observer
-  }
-
-  protected onError(error: unknown): void {
-    // TODO call bloc observer
   }
 }

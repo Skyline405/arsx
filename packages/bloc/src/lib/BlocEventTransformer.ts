@@ -1,19 +1,18 @@
-import { Observable, concatMap, exhaustMap, mergeMap, switchMap } from "rxjs"
+import { ObservableInput, OperatorFunction, concatMap, exhaustMap, mergeMap, pipe, switchMap } from "rxjs"
 
-export type BlocEventMapper<E> = (event: E) => Observable<E>
-export type BlocEventTransformer<E> = (
-  event$: Observable<E>,
+export type BlocEventMapper<E> = (event: E) => ObservableInput<E>
+export type BlocEventTransformer<T> = <E extends T>(
   mapper: BlocEventMapper<E>,
-) => Observable<E>
+) => OperatorFunction<E, E>
 
 export const concurrent = <E>(): BlocEventTransformer<E>  =>
-  (event$, mapper) => event$.pipe(mergeMap(mapper))
+  (mapper) => pipe(mergeMap(mapper))
 
 export const droppable = <E>(): BlocEventTransformer<E>  =>
-  (event$, mapper) => event$.pipe(exhaustMap(mapper))
+  (mapper) => pipe(exhaustMap(mapper))
 
 export const restartable = <E>(): BlocEventTransformer<E>  =>
-  (event$, mapper) => event$.pipe(switchMap(mapper))
+  (mapper) => pipe(switchMap(mapper))
 
 export const sequential = <E>(): BlocEventTransformer<E>  =>
-  (event$, mapper) => event$.pipe(concatMap(mapper))
+  (mapper) => pipe(concatMap(mapper))

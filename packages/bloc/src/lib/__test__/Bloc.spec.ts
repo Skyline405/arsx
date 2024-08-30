@@ -1,10 +1,14 @@
-import { debounceTime, mergeMap } from 'rxjs'
+import { debounceTime, mergeMap, pipe } from 'rxjs'
 import { Bloc } from '../Bloc'
-import { delay } from '../utils'
-import { BlocChange } from '../BlocChange'
-import { BlocTransition } from '../BlocTransition'
+
+import { CounterBloc, Add, Increment, Multiply, Reset, CounterEvent } from './mocks/CounterBloc.mock'
+import { BlocEventTransformer } from '../BlocEventTransformer'
 
 const defaultTransformer = Bloc.transformer
+
+jest.useFakeTimers({ advanceTimers: true })
+
+const delay = (time = 0) => jest.runAllTimersAsync()
 
 describe('Bloc', () => {
   afterEach(() => {
@@ -23,37 +27,14 @@ describe('Bloc', () => {
 
       expect(() => new MyBloc()).toThrow()
     })
-  })
 
-  describe('error handling and producing', () => {
-    it('should produce and handle errors', async () => {
-      class MyBloc extends Bloc<string, number> {
-        constructor() {
-          super(0)
-          this.on('inc', (event, emit) => {
-            this.addError(new Error('increment error!'))
-            emit(this.state + 1)
-          })
-        }
+    it('should emit initial state', async () => {
+      const emits: number[] = []
+      const bloc = new CounterBloc(0)
 
-        protected override onError<E extends Error>(error: E): void {
-          super.onError(error)
-          this.handleError(error)
-        }
-
-        handleError(error: Error): void {/* handle error */}
-      }
-
-      const bloc = new MyBloc()
-      const handlerMethod = jest.spyOn(bloc, 'handleError')
-
-      bloc.add('inc')
-      bloc.add('inc')
-
-      // await delay(0)
-
-      expect(handlerMethod).toHaveBeenCalledTimes(2)
-      expect(handlerMethod).toHaveBeenCalledWith(new Error('increment error!'))
+      bloc.state$.subscribe((value) => emits.push(value))
+      await delay(1)
+      expect(emits).toEqual([0])
     })
   })
 
@@ -106,40 +87,9 @@ describe('Bloc', () => {
 
   // WITH CLASSES
 
-  describe('using wit classes', () => {
-    abstract class CounterEvent {
-      __id = Symbol()
-    }
-    class Add extends CounterEvent {
-      constructor(readonly payload: number) { super() }
-    }
-    class Increment extends CounterEvent { }
-    class Reset extends CounterEvent {}
-    class Multiply extends CounterEvent {
-      constructor(readonly payload: number) { super() }
-    }
-
-    class CounterBloc extends Bloc<CounterEvent, number> {
-      constructor(init = 0) {
-        super(init)
-
-        this.on(Add, (event, emit) => {
-          emit(this.state + event.payload)
-        })
-
-        this.on(Increment, (event, emit) => {
-          emit(this.state + 1)
-        })
-
-        this.on(Multiply, async (event, emit) => {
-          await delay(0)
-          emit(this.state * event.payload)
-        })
-      }
-    }
-
+  describe('using with classes', () => {
     it('should throw error if event not registered', async () => {
-      const bloc = new CounterBloc()
+      const bloc = new CounterBloc(0)
       expect(() => bloc.add(new Reset())).toThrow()
     })
 
@@ -185,8 +135,8 @@ describe('Bloc', () => {
       })
 
       it('should use global custom transformer', async () => {
-        Bloc.transformer = (event$, mapper) =>
-          event$.pipe(
+        Bloc.transformer = (mapper) =>
+          pipe(
             debounceTime(1),
             mergeMap(mapper),
           )
@@ -194,59 +144,37 @@ describe('Bloc', () => {
         const bloc = new CounterBloc(1)
         bloc.add(new Add(2))
         bloc.add(new Add(1))
+
+        await delay(10)
+        expect(bloc.state).toEqual(2)
+
         bloc.add(new Multiply(5))
         bloc.add(new Multiply(7))
-
-        await delay(0)
-        expect(bloc.state).toEqual(2)
 
         await delay(10)
         expect(bloc.state).toEqual(14)
       })
-    })
-  })
 
-  describe('lifecycle hooks', () => {
-    it('should call lifecycle hooks in the given order', async () => {
-      const hookLog: any[] = []
+      it('should use custom transformer', async () => {
+        const transformer: BlocEventTransformer<CounterEvent> = (mapper) =>
+          pipe(
+            debounceTime(1),
+            mergeMap(mapper),
+          )
 
-      class HookedBloc extends Bloc<string, number> {
-        constructor(init = 0) {
-          super(init)
-          this.on('inc', (_, emit) => emit(this.state + 1))
-          this.on('dec', (_, emit) => emit(this.state - 1))
-        }
+        const bloc = new CounterBloc(1, transformer)
+        bloc.add(new Add(2))
+        bloc.add(new Add(1))
 
-        protected override onEvent<E extends string>(event: E): void {
-          super.onEvent(event)
-          hookLog.push(event)
-        }
+        await delay(10)
+        expect(bloc.state).toEqual(2)
 
-        protected override onChange(change: BlocChange<number>): void {
-          super.onChange(change)
-          hookLog.push(change)
-        }
+        bloc.add(new Multiply(5))
+        bloc.add(new Multiply(7))
 
-        protected override onTransition(transition: BlocTransition<string, number>): void {
-          super.onTransition(transition)
-          hookLog.push(transition)
-        }
-      }
-
-      const pattern = [
-        'inc', new BlocTransition(0, 1, 'inc'), new BlocChange(0, 1),
-        'inc', new BlocTransition(1, 2, 'inc'), new BlocChange(1, 2),
-        'dec', new BlocTransition(2, 1, 'dec'), new BlocChange(2, 1),
-      ]
-
-      const bloc = new HookedBloc(0)
-      bloc.add('inc')
-      bloc.add('inc')
-      bloc.add('dec')
-
-      await delay()
-
-      expect(pattern).toEqual(hookLog)
+        await delay(10)
+        expect(bloc.state).toEqual(14)
+      })
     })
   })
 })
