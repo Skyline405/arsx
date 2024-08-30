@@ -1,6 +1,8 @@
 import { BehaviorSubject, Subject, Observable, filter, distinctUntilChanged, share, of } from "rxjs"
 import { Constructor, asString, getConstructor } from "./utils"
 import { BlocEventTransformer, concurrent } from "./BlocEventTransformer"
+import { BlocChange } from "./BlocChange"
+import { BlocTransition } from "./BlocTransition"
 
 type EmitValue<T> = (value: T) => void
 type EventHander<E, T> = (event: E, emit: EmitValue<T>) => void | Promise<void>
@@ -39,8 +41,9 @@ export abstract class Bloc<BlocEvent, State> {
     return this._state$.getValue()
   }
 
-  private emit(value: State): void {
-    this._state$.next(value)
+  private emit(state: State): void {
+    this.onChange(new BlocChange(this.state, state))
+    this._state$.next(state)
   }
 
   protected on<E extends BlocEvent>(
@@ -67,7 +70,10 @@ export abstract class Bloc<BlocEvent, State> {
       (event) => {
         const handleEvent = async () => {
           try {
-            await handler(event, (value) => this.emit(value))
+            await handler(event, (state) => {
+              this.onTransition(new BlocTransition(this.state, state, event))
+              this.emit(state)
+            })
           } catch (error) {
             this.addError(error)
             throw error
@@ -93,17 +99,8 @@ export abstract class Bloc<BlocEvent, State> {
       throw error
     }
   }
-
-  protected onEvent<E extends BlocEvent>(event: E) {
-    // TODO call bloc observer
-  }
-
   protected addError(error: unknown): void {
     this.onError(error)
-  }
-
-  protected onError(error: unknown): void {
-    // TODO call bloc observer
   }
 
   get isDisposed(): boolean {
@@ -117,4 +114,19 @@ export abstract class Bloc<BlocEvent, State> {
     this._state$.unsubscribe()
   }
 
+  protected onEvent<E extends BlocEvent>(event: E) {
+    // TODO call bloc observer
+  }
+
+  protected onChange(change: BlocChange<State>): void {
+    // TODO call bloc observer
+  }
+
+  protected onTransition(transition: BlocTransition<BlocEvent, State>): void {
+    // TODO call bloc observer
+  }
+
+  protected onError(error: unknown): void {
+    // TODO call bloc observer
+  }
 }

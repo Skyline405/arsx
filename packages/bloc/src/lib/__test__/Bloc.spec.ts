@@ -1,8 +1,16 @@
-import { concatMap, debounceTime, mergeMap } from 'rxjs'
+import { debounceTime, mergeMap } from 'rxjs'
 import { Bloc } from '../Bloc'
 import { delay } from '../utils'
+import { BlocChange } from '../BlocChange'
+import { BlocTransition } from '../BlocTransition'
+
+const defaultTransformer = Bloc.transformer
 
 describe('Bloc', () => {
+  afterEach(() => {
+    Bloc.transformer = defaultTransformer
+  })
+
   describe('basic usage', () => {
     it('should not register event handler more than once', () => {
       class MyBloc extends Bloc<string, number> {
@@ -194,8 +202,51 @@ describe('Bloc', () => {
 
         await delay(10)
         expect(bloc.state).toEqual(14)
-
       })
+    })
+  })
+
+  describe('lifecycle hooks', () => {
+    it('should call lifecycle hooks in the given order', async () => {
+      const hookLog: any[] = []
+
+      class HookedBloc extends Bloc<string, number> {
+        constructor(init = 0) {
+          super(init)
+          this.on('inc', (_, emit) => emit(this.state + 1))
+          this.on('dec', (_, emit) => emit(this.state - 1))
+        }
+
+        protected override onEvent<E extends string>(event: E): void {
+          super.onEvent(event)
+          hookLog.push(event)
+        }
+
+        protected override onChange(change: BlocChange<number>): void {
+          super.onChange(change)
+          hookLog.push(change)
+        }
+
+        protected override onTransition(transition: BlocTransition<string, number>): void {
+          super.onTransition(transition)
+          hookLog.push(transition)
+        }
+      }
+
+      const pattern = [
+        'inc', new BlocTransition(0, 1, 'inc'), new BlocChange(0, 1),
+        'inc', new BlocTransition(1, 2, 'inc'), new BlocChange(1, 2),
+        'dec', new BlocTransition(2, 1, 'dec'), new BlocChange(2, 1),
+      ]
+
+      const bloc = new HookedBloc(0)
+      bloc.add('inc')
+      bloc.add('inc')
+      bloc.add('dec')
+
+      await delay()
+
+      expect(pattern).toEqual(hookLog)
     })
   })
 })
