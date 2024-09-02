@@ -1,6 +1,6 @@
-import { BehaviorSubject, Subject, Observable, filter, distinctUntilChanged, share, OperatorFunction } from "rxjs"
+import { BehaviorSubject, Subject, Observable, filter, distinctUntilChanged, share } from "rxjs"
 import { Constructor, asString, getConstructor } from "./utils"
-import { BlocEventMapper, BlocEventTransformer, concurrent } from "./BlocEventTransformer"
+import { BlocEventTransformer, concurrent } from "./BlocEventTransformer"
 
 type EmitValue<T> = (value: T) => void
 type EventHander<E, T> = (event: E, emit: EmitValue<T>) => void | Promise<void>

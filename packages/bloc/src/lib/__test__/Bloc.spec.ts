@@ -36,6 +36,15 @@ describe('Bloc', () => {
       await delay(1)
       expect(emits).toEqual([0])
     })
+
+    it('can be disposed', () => {
+      const bloc = new CounterBloc(0)
+      expect(bloc.isDisposed).toBe(false)
+      expect(() => bloc.add(new Increment())).not.toThrow()
+      bloc.dispose()
+      expect(bloc.isDisposed).toBe(true)
+      expect(() => bloc.add(new Increment())).toThrow()
+    })
   })
 
   // WITH ENUMS
