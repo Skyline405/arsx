@@ -35,7 +35,8 @@
     "version": {
       "preVersionCommand": "npx nx run-many -t build",
       "conventionalCommits": true
-    }
+    },
+    "projectsRelationship": "independent"
   },
   "useInferencePlugins": false,
   "defaultBase": "main"
