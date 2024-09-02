@@ -18,6 +18,8 @@
   "keywords": [
     "bloc",
     "bloc pattern",
-    "business logic"
+    "business logic",
+    "business logic component",
+    "state management"
   ]
 }
